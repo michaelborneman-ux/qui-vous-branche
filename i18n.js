@@ -61,6 +61,7 @@ window.I18N = {
     errOutside: { t: 'Hors couverture', b: "Cette adresse est en dehors du Québec. Les autres provinces seront ajoutées plus tard." },
     errNoCell: { t: 'Aucune donnée pour ce point', b: "Aucune cellule de couverture ne correspond. Essayez une adresse voisine." },
     errNetwork: { t: 'Recherche impossible', b: "Le service de géolocalisation n'a pas répondu. Vérifiez votre connexion et réessayez." },
+    errStaleClient: { t: 'Données non chargées', b: "Les données de couverture n'ont pas pu être chargées. Rechargez la page ; si le problème persiste, ouvrez ?reset=1." },
     errOffline: { t: 'Hors ligne', b: "La recherche d'adresse a besoin d'Internet. Les résultats déjà consultés restent accessibles." },
   },
 
@@ -125,6 +126,7 @@ window.I18N = {
     errOutside: { t: 'Outside coverage', b: 'That address is outside Quebec. Other provinces come later.' },
     errNoCell: { t: 'No data for this point', b: 'No coverage cell matches it. Try a nearby address.' },
     errNetwork: { t: 'Search failed', b: 'The geolocation service did not respond. Check your connection and try again.' },
+    errStaleClient: { t: 'Coverage data did not load', b: 'The coverage data could not be loaded. Reload the page; if it keeps happening, open ?reset=1.' },
     errOffline: { t: 'Offline', b: 'Address search needs a connection. Results you already viewed still work.' },
   },
 };

@@ -1,12 +1,12 @@
 /* Bump CACHE on every shell change, or clients keep the old files. */
-const CACHE = 'qvb-v4';
+const CACHE = 'qvb-v5';
 
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=4',
-  'i18n.js?v=4',
-  'app.js?v=4',
+  'style.css?v=5',
+  'i18n.js?v=5',
+  'app.js?v=5',
   'manifest.webmanifest',
   'icons/icon.svg',
   'data/meta.json',
@@ -37,21 +37,10 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;   // geocoding stays online-only
 
-  // Coverage shards never change between data refreshes: serve from cache, then fill.
-  if (url.pathname.includes('/data/hex/')) {
-    event.respondWith(
-      caches.match(request).then(hit => hit || fetch(request).then(res => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(request, copy));
-        }
-        return res;
-      }))
-    );
-    return;
-  }
-
-  // Shell: network first so a deploy lands immediately, cache as the offline floor.
+  // Everything is network first, with the cache as the offline floor. Coverage
+  // shards were cache first once: that let a client keep serving a previous
+  // build's data forever with no way to notice, which is far worse than one
+  // small request per shard.
   event.respondWith(
     fetch(request)
       .then(res => {

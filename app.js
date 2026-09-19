@@ -28,7 +28,38 @@
     shards: new Map(),
     result: null,
     sort: 'value',
+    shardsTried: 0,
+    shardsLoaded: 0,
   };
+
+  // A wedged client - an old service worker, a half-written cache - otherwise
+  // reports "no coverage here" for every address, which is indistinguishable
+  // from a genuine gap. Clearing the caches and reloading once recovers it;
+  // ?reset=1 does the same on demand.
+  async function resetClient() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => caches.delete(n)));
+      }
+    } catch (err) {
+      console.warn('reset failed', err);
+    }
+  }
+
+  async function selfHealOnce() {
+    let healed = null;
+    try { healed = sessionStorage.getItem('healed'); } catch (e) { /* private mode */ }
+    if (healed) return false;
+    try { sessionStorage.setItem('healed', '1'); } catch (e) { /* private mode */ }
+    await resetClient();
+    location.reload();
+    return true;
+  }
 
   const t = () => window.I18N[state.lang];
 
@@ -55,15 +86,18 @@
     return [...keys];
   }
 
-  // Shards are cached cache-first and never revalidated, so the build stamp from
-  // meta.json (which is fetched network-first) goes in the URL. A data refresh
-  // changes every shard URL, which retires the old entries instead of leaving a
-  // client serving a previous build's shape forever.
+  // The build stamp from meta.json goes in the URL so a data refresh changes
+  // every shard URL, retiring anything a client cached from a previous build.
   async function loadShard(key) {
     if (state.shards.has(key)) return state.shards.get(key);
     const stamp = state.meta && state.meta.built ? `?b=${state.meta.built}` : '';
+    state.shardsTried++;
     const p = fetch(`data/hex/${key}.json${stamp}`)
-      .then(r => (r.ok ? r.json() : null))
+      .then(r => {
+        if (!r.ok) return null;
+        state.shardsLoaded++;
+        return r.json();
+      })
       .catch(() => null);
     state.shards.set(key, p);
     return p;
@@ -436,8 +470,19 @@
 
   async function lookup(place) {
     if (!inQuebec(place)) { showError('errOutside'); return; }
+    state.shardsTried = 0;
+    state.shardsLoaded = 0;
     const cell = await findCell(place.lat, place.lon, provinceCode(place));
-    if (!cell) { showError('errNoCell'); return; }
+    if (!cell) {
+      // No shard answered at all: that is a broken client, not empty geography.
+      if (state.shardsTried && !state.shardsLoaded) {
+        if (await selfHealOnce()) return;
+        showError('errStaleClient');
+        return;
+      }
+      showError('errNoCell');
+      return;
+    }
 
     state.result = {
       place,
@@ -530,6 +575,12 @@
   /* ---------- boot ---------- */
 
   async function init() {
+    if (new URL(location.href).searchParams.get('reset')) {
+      await resetClient();
+      location.replace(location.pathname);
+      return;
+    }
+
     let saved = null;
     try { saved = localStorage.getItem('lang'); } catch (e) { /* private mode */ }
     const browserLang = (navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
