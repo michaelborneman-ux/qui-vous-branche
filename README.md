@@ -20,6 +20,17 @@ hexagonal cell of roughly 25 km². This app ships that data as static JSON.
 | Providers, technology, speed tier | ISED `api/hexagonArea`, crawled offline into `data/hex/` |
 | Prices | `data/plans.json`, maintained by hand |
 
+### The hand-off cannot be an in-app check
+
+A provider's own availability checker is the only real answer for a given
+address, and the app cannot stand in for it. Their qualification APIs are
+private and CORS-blocked, the checkers are JavaScript flows with no
+URL-addressable form (checked against Videotron, EBOX and Bell), and relaying
+them through a proxy would mean reverse-engineering each checkout past its bot
+protection. So clicking a provider copies the address to the clipboard and opens
+their checker, which saves the retyping and nothing more. The click is never
+blocked on the copy: a clipboard failure costs the toast, not the link.
+
 **The honest limit:** a cell is about 7 km across. The app says which providers
 operate *in the area*, never that a given address can be served. Every provider
 row links to that provider's own address checker, which is the real answer.

@@ -316,6 +316,66 @@
     $('#fact-asof').textContent = state.meta ? state.meta.built : '—';
   }
 
+  /* ---------- handing off to a provider ---------- */
+
+  // A provider's own availability checker is the only real answer about a given
+  // address, and it cannot be reached from here: those APIs are private,
+  // CORS-blocked and not URL-addressable. So the hand-off carries the address
+  // on the clipboard instead of making the user retype it.
+  let toastTimer = null;
+
+  function showToast(message) {
+    const box = $('#toast');
+    box.textContent = message;
+    box.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { box.hidden = true; }, 4000);
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (err) { /* fall through to the legacy path */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.append(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  // Marks an outbound provider link so the delegated handler copies on the way out.
+  function providerLink(href, providerName) {
+    const a = el('a', 'isp-link', t().check + ' ↗');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.dataset.handoff = '1';
+    a.title = t().checkTitle(providerName);
+    return a;
+  }
+
+  // Delegated, and deliberately not preventing the default: the new tab opens
+  // from the user's own click, and a clipboard failure never costs them the link.
+  document.addEventListener('click', ev => {
+    const link = ev.target.closest && ev.target.closest('a[data-handoff]');
+    if (!link) return;
+    const address = state.result && state.result.place ? state.result.place.title : '';
+    if (!address) return;
+    copyText(address).then(ok => { if (ok) showToast(t().copied); });
+  });
+
   /* ---------- rendering: providers ---------- */
 
   function groupByTech(entries) {
@@ -350,13 +410,7 @@
         const li = el('li');
         li.append(el('span', 'isp-name', provider.name));
         if (speed && speed !== g.best) li.append(el('span', 'techspeed', t().speed[speed]));
-        if (provider.url) {
-          const a = el('a', 'isp-link', t().check + ' ↗');
-          a.href = provider.url;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          li.append(a);
-        }
+        if (provider.url) li.append(providerLink(provider.url, provider.name));
         list.append(li);
       }
       wrap.append(list);
@@ -450,10 +504,8 @@
       if (plan.note) meta.append(el('span', null, plan.note));
       meta.append(el('span', null, t().verified(plan.verified)));
       if (plan.source) {
-        const a = el('a', null, t().check + ' ↗');
-        a.href = plan.source;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
+        const a = providerLink(plan.source, plan.providerName || providerName(plan.provider));
+        a.className = '';
         meta.append(a);
       }
       row.append(meta);
