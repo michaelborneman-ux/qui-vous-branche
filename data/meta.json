@@ -1,0 +1,13 @@
+{
+ "built": "2026-09-19",
+ "provinces": [
+  "NB",
+  "NL",
+  "ON",
+  "QC"
+ ],
+ "hexCount": 10463,
+ "providerCount": 109,
+ "shardCount": 411,
+ "source": "ISED/CRTC National Broadband Data, Open Government Licence - Canada"
+}

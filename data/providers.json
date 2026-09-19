@@ -1,0 +1,547 @@
+[
+ {
+  "id": "307net",
+  "name": "307NET",
+  "url": "https://www.307net.ca/"
+ },
+ {
+  "id": "aie-informatique",
+  "name": "AiE Informatique",
+  "url": "https://aieinformatique.net/"
+ },
+ {
+  "id": "airfib",
+  "name": "airFib",
+  "url": "https://www.xamika.com/"
+ },
+ {
+  "id": "alliance-telecom",
+  "name": "Alliance Télécom",
+  "url": "http://alliancetelecom.ca/"
+ },
+ {
+  "id": "altima-telecom",
+  "name": "Altima Telecom",
+  "url": "https://altimatel.com/"
+ },
+ {
+  "id": "aptr",
+  "name": "APTR",
+  "url": "https://telefibrelaminerve.com/"
+ },
+ {
+  "id": "beanfield-metroconnect",
+  "name": "Beanfield Metroconnect",
+  "url": "https://www.beanfield.com/"
+ },
+ {
+  "id": "beauce-sans-fil",
+  "name": "Beauce Sans Fil",
+  "url": "http://www.beaucesansfil.com/"
+ },
+ {
+  "id": "beauce-telecom",
+  "name": "Beauce Télécom",
+  "url": "http://www.beaucetelecom.com"
+ },
+ {
+  "id": "bell",
+  "name": "Bell",
+  "url": "https://www.bell.ca"
+ },
+ {
+  "id": "bonnechere-communications",
+  "name": "Bonnechere Communications",
+  "url": "https://www.bonnecomm.net/"
+ },
+ {
+  "id": "c-i-m",
+  "name": "C-I-M",
+  "url": "https://www.c-i-m.ca/"
+ },
+ {
+  "id": "cable-tv-des-plateaux",
+  "name": "Câble TV des  Plateaux",
+  "url": null
+ },
+ {
+  "id": "cablevision",
+  "name": "Cablevision",
+  "url": "https://cablevision.qc.ca/"
+ },
+ {
+  "id": "caci",
+  "name": "CACI",
+  "url": "https://www.facebook.com/ConnexionInternetSaintMaximeDuMontLouisGaspesie/"
+ },
+ {
+  "id": "calabogie-wireless",
+  "name": "Calabogie Wireless",
+  "url": "https://calabogiewireless.com/"
+ },
+ {
+  "id": "ccap",
+  "name": "CCAP",
+  "url": "https://www.ccapcable.com/"
+ },
+ {
+  "id": "cogeco-connexion",
+  "name": "Cogeco Connexion",
+  "url": "https://www.cogeco.ca/"
+ },
+ {
+  "id": "communication-stratford",
+  "name": "Communication Stratford",
+  "url": "https://www.communicationstratford.org/"
+ },
+ {
+  "id": "communications-charlevoix",
+  "name": "Communications Charlevoix",
+  "url": "https://communicationscharlevoix.com/"
+ },
+ {
+  "id": "communications-telesignal",
+  "name": "Communications Télésignal",
+  "url": "https://www.telesignal.ca/"
+ },
+ {
+  "id": "community-fibre-company",
+  "name": "Community Fibre Company",
+  "url": "https://www.communityfibre.ca/"
+ },
+ {
+  "id": "connexion-matawinie",
+  "name": "Connexion Matawinie",
+  "url": "https://www.connexionmatawinie.org/"
+ },
+ {
+  "id": "coop-cablo-leeds",
+  "name": "Coop Câblo Leeds",
+  "url": "https://www.saintjacquesdeleeds.ca/coop-cablo-leeds"
+ },
+ {
+  "id": "coop-csur",
+  "name": "Coop CSUR",
+  "url": "http://www.csur.ca"
+ },
+ {
+  "id": "coop-isle-aux-coudres",
+  "name": "Coop Isle-aux-Coudres",
+  "url": "https://www.isleauxcoudres.com/"
+ },
+ {
+  "id": "coop-les-eboulements",
+  "name": "Coop Les Éboulements",
+  "url": "https://www.facebook.com/pg/Coop-Câblodistribution-Les-Éboulements-1627160674250365/"
+ },
+ {
+  "id": "coop-notre-dame-des-monts",
+  "name": "Coop Notre-Dame Des Monts",
+  "url": "http://coop-nddm.byethost14.com/accueil.html"
+ },
+ {
+  "id": "coop-sainte-agathe",
+  "name": "Coop Sainte-Agathe",
+  "url": "https://www.cabloagathe.ca/"
+ },
+ {
+  "id": "coop-ste-hedwidge",
+  "name": "Coop Ste-Hedwidge",
+  "url": "https://coopstehedwidge.ca/"
+ },
+ {
+  "id": "coop-tele-cable-ste-clotilde",
+  "name": "Coop Télé-câble Ste-Clotilde",
+  "url": "http://coopsteclotilde.com/"
+ },
+ {
+  "id": "cooperative-antenne-t-v-st-zacharie",
+  "name": "Coopérative Antenne T.V. St-Zacharie",
+  "url": "http://www.antennetvst-zacharie.com/"
+ },
+ {
+  "id": "cooptel",
+  "name": "CoopTel",
+  "url": "https://www.cooptel.ca/"
+ },
+ {
+  "id": "crrs",
+  "name": "CRRS",
+  "url": "https://www.crrs.net/"
+ },
+ {
+  "id": "cscf",
+  "name": "CSCF",
+  "url": "https://www.coopcscf.com/"
+ },
+ {
+  "id": "dauversierenet",
+  "name": "DauversiereNet",
+  "url": "https://dauversierenet.com/"
+ },
+ {
+  "id": "diffusion-fermont",
+  "name": "Diffusion Fermont",
+  "url": "https://www.diffusionfermont.ca"
+ },
+ {
+  "id": "digicom-internet-sans-fil",
+  "name": "Digicom Internet sans fil",
+  "url": "https://digicom.ca/"
+ },
+ {
+  "id": "eastlink",
+  "name": "Eastlink",
+  "url": "https://www.eastlink.ca/"
+ },
+ {
+  "id": "ecotel",
+  "name": "ECOTEL",
+  "url": "http://eco-tel.co/"
+ },
+ {
+  "id": "eeyou-communications-network-ecn",
+  "name": "Eeyou Communications Network ECN",
+  "url": "https://www.eeyou.ca"
+ },
+ {
+  "id": "evolu-net",
+  "name": "Evolu-Net",
+  "url": "https://www.evolu-net.ca/index.html#"
+ },
+ {
+  "id": "fibrestream",
+  "name": "FibreStream",
+  "url": "https://www.fibrestream.ca/"
+ },
+ {
+  "id": "filau-fibre-internet-laurentides",
+  "name": "Filau Fibre Internet Laurentides",
+  "url": "http://www.filau.com"
+ },
+ {
+  "id": "first-nations-fiber",
+  "name": "First Nations Fiber",
+  "url": "https://www.fnfiber.com/"
+ },
+ {
+  "id": "fleettel",
+  "name": "FleetTel",
+  "url": "https://fleettel.ca/espace-client/"
+ },
+ {
+  "id": "freedom-mobile",
+  "name": "Freedom Mobile",
+  "url": "https://www.freedommobile.ca"
+ },
+ {
+  "id": "galaxy-broadband",
+  "name": "Galaxy Broadband",
+  "url": "http://www.galaxybroadband.ca/"
+ },
+ {
+  "id": "gestion-xcd-inc",
+  "name": "Gestion XCD inc.",
+  "url": "https://xcdtelecom.com/"
+ },
+ {
+  "id": "gozoom",
+  "name": "goZoom",
+  "url": "http://gozoom.ca/"
+ },
+ {
+  "id": "groupe-acces-communications",
+  "name": "Groupe Acces Communications",
+  "url": "https://www.acces.com/"
+ },
+ {
+  "id": "henri",
+  "name": "Henri",
+  "url": "https://ouihenri.ca/"
+ },
+ {
+  "id": "i-s-f-quebec",
+  "name": "I.S.F Québec",
+  "url": "https://isfquebec.com/en/montreal/"
+ },
+ {
+  "id": "ice-wireless",
+  "name": "ICE Wireless",
+  "url": "https://www.icewireless.com/"
+ },
+ {
+  "id": "icenet-wireless",
+  "name": "IceNet Wireless",
+  "url": "https://icenetwireless.com/en/"
+ },
+ {
+  "id": "idlogic",
+  "name": "idlogic",
+  "url": "https://idlogic.com/"
+ },
+ {
+  "id": "igs-hawkesbury",
+  "name": "IGS Hawkesbury",
+  "url": "https://www.igshawkesbury.com/"
+ },
+ {
+  "id": "internexe",
+  "name": "Internexe",
+  "url": "https://internexe.com/"
+ },
+ {
+  "id": "interplex-telecom",
+  "name": "Interplex Télécom",
+  "url": "https://www.interplex.ca/residentiel/"
+ },
+ {
+  "id": "k-fiber-optic",
+  "name": "K Fiber Optic",
+  "url": "https://k-fo.net/"
+ },
+ {
+  "id": "kinwapt-cable",
+  "name": "Kinwapt Cable",
+  "url": "https://kinwapt.com/"
+ },
+ {
+  "id": "lambton-courcelles",
+  "name": "Lambton Courcelles",
+  "url": "https://tellambtoncourcelles.com/"
+ },
+ {
+  "id": "leepfrog-telecom",
+  "name": "Leepfrog Telecom",
+  "url": "https://www.leepfrogtelecom.com/"
+ },
+ {
+  "id": "luciole-telecom",
+  "name": "Luciole Télécom",
+  "url": "https://www.lucioletelecom.com/"
+ },
+ {
+  "id": "lumii",
+  "name": "Lumii",
+  "url": "https://lumii-solutions.com/"
+ },
+ {
+  "id": "manawan-telecommunications-atikamekw",
+  "name": "Manawan Télécommunications Atikamekw",
+  "url": "http://manawan.com/telecom_services"
+ },
+ {
+  "id": "maskatel",
+  "name": "MaskaTel",
+  "url": "https://maskatel.ca/"
+ },
+ {
+  "id": "mc-telecom",
+  "name": "MC Telecom",
+  "url": "http://mctelecom.ca/"
+ },
+ {
+  "id": "mrc-argenteuil",
+  "name": "MRC Argenteuil",
+  "url": "https://argenteuil.qc.ca/"
+ },
+ {
+  "id": "mrc-d-antoine-labelle",
+  "name": "MRC d'Antoine-Labelle",
+  "url": "https://www.mrc-antoine-labelle.qc.ca/"
+ },
+ {
+  "id": "multilink",
+  "name": "MultiLink",
+  "url": "https://multi-link.ca/"
+ },
+ {
+  "id": "n4-mobile-inc",
+  "name": "N4 Mobile Inc",
+  "url": "https://n4mobile.com/"
+ },
+ {
+  "id": "navigue",
+  "name": "Navigue",
+  "url": "https://www.telus.com/"
+ },
+ {
+  "id": "netsolid",
+  "name": "Netsolid",
+  "url": "https://www.netsolid.ca/"
+ },
+ {
+  "id": "netspectrum",
+  "name": "NetSpectrum",
+  "url": "https://www.netspectrum.ca/"
+ },
+ {
+  "id": "north-renfrew-telephone-company",
+  "name": "North Renfrew Telephone Company",
+  "url": "http://www.nrtco.net/"
+ },
+ {
+  "id": "northern-rural-net",
+  "name": "Northern Rural Net",
+  "url": "https://www.northernrural.net/"
+ },
+ {
+  "id": "northern-tel",
+  "name": "Northern Tel",
+  "url": "https://www.northerntel.ca/"
+ },
+ {
+  "id": "omnitec-wireless",
+  "name": "OmniTEC Wireless",
+  "url": null
+ },
+ {
+  "id": "ontarioeast-net",
+  "name": "ontarioeast.net",
+  "url": "https://www.ontarioeast.net/"
+ },
+ {
+  "id": "ontera",
+  "name": "Ontera",
+  "url": "https://ontera.ca/"
+ },
+ {
+  "id": "parolink",
+  "name": "ParoLink",
+  "url": "https://parolink.net/"
+ },
+ {
+  "id": "pioneerwireless",
+  "name": "PioneerWireless",
+  "url": "https://pioneerwireless.ca/"
+ },
+ {
+  "id": "prefil-rive-sud",
+  "name": "Préfil Rive-Sud",
+  "url": "https://www.prefil.ca/"
+ },
+ {
+  "id": "rogers",
+  "name": "Rogers",
+  "url": "https://www.rogers.com/"
+ },
+ {
+  "id": "rtc-havre-saint-pierre",
+  "name": "RTC Havre-Saint-Pierre",
+  "url": "http://www.rtccable.com/"
+ },
+ {
+  "id": "secot",
+  "name": "SECOT",
+  "url": "https://www.facebook.com/secot.admin/"
+ },
+ {
+  "id": "services-telecommunications-wemotaci",
+  "name": "Services Télécommunications Wemotaci",
+  "url": "https://www.facebook.com/p/Services-Télécommunication-Wemotaci-STW-100063789881054/"
+ },
+ {
+  "id": "sichuun",
+  "name": "Sichuun",
+  "url": "https://www.sichuun.com/"
+ },
+ {
+  "id": "sogetel",
+  "name": "Sogetel",
+  "url": "http://www.sogetel.com/"
+ },
+ {
+  "id": "solufi",
+  "name": "Solufi",
+  "url": "https://www.solufi.ca/"
+ },
+ {
+  "id": "ssi-micro",
+  "name": "Ssi Micro",
+  "url": "https://www.ssicanada.com/"
+ },
+ {
+  "id": "storm-internet",
+  "name": "Storm Internet",
+  "url": "https://storm.ca/"
+ },
+ {
+  "id": "tamaani-internet",
+  "name": "Tamaani Internet",
+  "url": "https://www.tamaani.ca/"
+ },
+ {
+  "id": "targo",
+  "name": "Targo",
+  "url": "https://www.targo.ca/"
+ },
+ {
+  "id": "tcv",
+  "name": "TCV",
+  "url": "https://www.tcvnet.ca/"
+ },
+ {
+  "id": "tele-cable-la-conception",
+  "name": "Télé-Câble La Conception",
+  "url": "http://telecablelaconception.com/"
+ },
+ {
+  "id": "telebec",
+  "name": "Télébec",
+  "url": "https://www.telebec.com/"
+ },
+ {
+  "id": "telkel",
+  "name": "TelKel",
+  "url": "https://www.telkel.ca/home/"
+ },
+ {
+  "id": "telus",
+  "name": "Telus",
+  "url": "https://www.telus.com/"
+ },
+ {
+  "id": "tower-telecom-ltd",
+  "name": "Tower Telecom Ltd",
+  "url": "https://towertelecom.ca/"
+ },
+ {
+  "id": "transvision-cookshire",
+  "name": "Transvision Cookshire",
+  "url": "http://www.gtvr.com/"
+ },
+ {
+  "id": "unireso",
+  "name": "UniRéso",
+  "url": "https://unireso.ca/"
+ },
+ {
+  "id": "vianet",
+  "name": "Vianet",
+  "url": "https://vianet.ca"
+ },
+ {
+  "id": "videotron",
+  "name": "Vidéotron",
+  "url": "https://www.videotron.com/"
+ },
+ {
+  "id": "voom-internet",
+  "name": "Voom Internet",
+  "url": "https://www.voominternet.ca/"
+ },
+ {
+  "id": "whitewater-internet",
+  "name": "Whitewater Internet",
+  "url": "https://www.whitewaterinternet.ca/"
+ },
+ {
+  "id": "wifi-quebec",
+  "name": "Wifi Québec",
+  "url": "https://wifiquebec.com/"
+ },
+ {
+  "id": "xplore",
+  "name": "Xplore",
+  "url": "https://www.xplore.ca/"
+ }
+]

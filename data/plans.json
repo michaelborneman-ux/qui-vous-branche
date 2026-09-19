@@ -1,0 +1,73 @@
+[
+  {
+    "provider": "ebox",
+    "name": {
+      "fr": "Câble 500",
+      "en": "Cable 500"
+    },
+    "tech": "cable",
+    "down": 500,
+    "up": 50,
+    "price": 55,
+    "promoPrice": null,
+    "promoMonths": null,
+    "term": "month-to-month",
+    "cap": "unlimited",
+    "ridesOn": [
+      "videotron",
+      "cogeco-connexion"
+    ],
+    "source": "https://www.ebox.ca/en/quebec/residential/internet-packages/",
+    "verified": "2026-09-19",
+    "note": "Promotional rate advertised until 2026-09-30; upload speed not published.",
+    "providerName": "EBOX"
+  },
+  {
+    "provider": "videotron",
+    "name": {
+      "fr": "Internet GIGA",
+      "en": "Internet GIGA"
+    },
+    "tech": "cable",
+    "down": 1000,
+    "up": null,
+    "price": null,
+    "term": "month-to-month",
+    "cap": "unlimited",
+    "source": "https://videotron.com/en/residential/internet",
+    "verified": "2026-09-19",
+    "providerName": "Vidéotron"
+  },
+  {
+    "provider": "videotron",
+    "name": {
+      "fr": "Internet 500",
+      "en": "Internet 500"
+    },
+    "tech": "cable",
+    "down": 500,
+    "up": null,
+    "price": null,
+    "term": "month-to-month",
+    "cap": "unlimited",
+    "source": "https://videotron.com/en/residential/internet",
+    "verified": "2026-09-19",
+    "providerName": "Vidéotron"
+  },
+  {
+    "provider": "videotron",
+    "name": {
+      "fr": "Internet 100",
+      "en": "Internet 100"
+    },
+    "tech": "cable",
+    "down": 100,
+    "up": null,
+    "price": null,
+    "term": "month-to-month",
+    "cap": "unlimited",
+    "source": "https://videotron.com/en/residential/internet",
+    "verified": "2026-09-19",
+    "providerName": "Vidéotron"
+  }
+]
