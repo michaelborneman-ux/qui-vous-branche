@@ -15,13 +15,28 @@ hexagonal cell of roughly 25 km². This app ships that data as static JSON.
 | Piece | Where it comes from |
 |---|---|
 | Address → lat/lon | NRCan geolocation service, live, no key (`geogratis.gc.ca`), with Photon as a fallback |
-| Which cell | Nearest cell centroid in a local 0.5° shard |
+| Which cell | Point-in-polygon against the cells in a local 0.5° shard |
+| Base map | OpenStreetMap raster tiles via Leaflet (CDN) |
 | Providers, technology, speed tier | ISED `api/hexagonArea`, crawled offline into `data/hex/` |
 | Prices | `data/plans.json`, maintained by hand |
 
 **The honest limit:** a cell is about 7 km across. The app says which providers
 operate *in the area*, never that a given address can be served. Every provider
 row links to that provider's own address checker, which is the real answer.
+The map draws each cell's true outline, so the size of that claim is visible
+rather than described.
+
+### The map
+
+Leaflet over OpenStreetMap tiles, loaded from a CDN with SRI hashes. Clicking
+anywhere queries that point directly - no address needed - and Photon's reverse
+geocoder fills in a place name afterwards, so the answer never waits on it.
+Leaflet is the one external dependency; offline it is simply absent and the map
+hides itself behind a note while address search keeps working. OSM has no dark
+tile set, so dark mode inverts the tile pane in CSS.
+
+`window.QVB` exposes `lookupPoint`, `map` and `cell` as a deliberate test
+surface for driving the map headlessly.
 
 ### Geocoding has a fallback on purpose
 

@@ -11,7 +11,10 @@ window.I18N = {
     searching: 'Recherche…',
     heroNote: ({ hexCount, asOf }) => `${hexCount} cellules au Québec · données du ${asOf}`,
 
-    hexTitle: "Cellule de couverture et position approximative de l'adresse",
+    mapTitle: 'Carte de couverture',
+    mapHint: "Cliquez n'importe où sur la carte pour voir les fournisseurs de cette cellule.",
+    mapOffline: "La carte a besoin d'une connexion. La recherche par adresse fonctionne toujours.",
+    mapPoint: 'Point sur la carte',
     cellAddress: 'Adresse',
     cellId: 'Cellule',
     cellSize: 'Superficie',
@@ -54,7 +57,7 @@ window.I18N = {
     anywhere: 'Disponible partout',
     noPlans: "Aucun forfait relevé pour les fournisseurs de cette cellule. Utilisez les liens ci-dessus.",
 
-    footData: "Couverture : Données nationales sur les services à large bande d'ISDE/CRTC, sous la Licence du gouvernement ouvert – Canada. Géocodage : Service de géolocalisation de RNCan.",
+    footData: "Couverture : Données nationales sur les services à large bande d'ISDE/CRTC, sous la Licence du gouvernement ouvert – Canada. Géocodage : Service de géolocalisation de RNCan et Photon. Fond de carte : OpenStreetMap.",
     footIndep: "Ce site n'est affilié à aucun fournisseur.",
 
     errNotFound: { t: 'Adresse introuvable', b: "Ajoutez la ville ou le code postal, puis réessayez." },
@@ -76,7 +79,10 @@ window.I18N = {
     searching: 'Searching…',
     heroNote: ({ hexCount, asOf }) => `${hexCount} cells across Quebec · data from ${asOf}`,
 
-    hexTitle: 'Coverage cell with the approximate position of the address',
+    mapTitle: 'Coverage map',
+    mapHint: 'Click anywhere on the map to see the providers in that cell.',
+    mapOffline: 'The map needs a connection. Address search still works.',
+    mapPoint: 'Map point',
     cellAddress: 'Address',
     cellId: 'Cell',
     cellSize: 'Area',
@@ -119,7 +125,7 @@ window.I18N = {
     anywhere: 'Available anywhere',
     noPlans: 'No plans on file for the providers in this cell. Use the links above.',
 
-    footData: 'Coverage: ISED/CRTC National Broadband Data, under the Open Government Licence – Canada. Geocoding: NRCan Geolocation Service.',
+    footData: 'Coverage: ISED/CRTC National Broadband Data, under the Open Government Licence – Canada. Geocoding: NRCan Geolocation Service and Photon. Base map: OpenStreetMap.',
     footIndep: 'This site is not affiliated with any provider.',
 
     errNotFound: { t: 'Address not found', b: 'Add the city or a postal code, then try again.' },

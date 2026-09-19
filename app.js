@@ -30,6 +30,7 @@
     sort: 'value',
     shardsTried: 0,
     shardsLoaded: 0,
+    shardErrors: 0,
   };
 
   // A wedged client - an old service worker, a half-written cache - otherwise
@@ -94,11 +95,11 @@
     state.shardsTried++;
     const p = fetch(`data/hex/${key}.json${stamp}`)
       .then(r => {
-        if (!r.ok) return null;
+        if (!r.ok) return null;          // 404 is normal: nothing is mapped out there
         state.shardsLoaded++;
         return r.json();
       })
-      .catch(() => null);
+      .catch(() => { state.shardErrors++; return null; });
     state.shards.set(key, p);
     return p;
   }
@@ -245,59 +246,74 @@
     return inBounds(place);          // the title did not name a province
   }
 
-  /* ---------- rendering: the coverage cell ---------- */
+  /* ---------- the map ---------- */
 
-  function drawCell(place, cell) {
+  // Standard OpenStreetMap raster tiles. Dark mode is handled in CSS by
+  // filtering the tile pane, since OSM ships no dark variant.
+  const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const TILE_ATTRIB =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  const QC_VIEW = [[45.0, -79.5], [51.5, -61.0]];   // the populated part of Quebec
+
+  const map = { instance: null, tiles: null, cell: null, marker: null };
+
+  const cssVar = name =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function initMap() {
+    if (typeof L === 'undefined') {          // Leaflet is a CDN script: offline it is simply absent
+      $('#map').hidden = true;
+      $('#map-fallback').hidden = false;
+      return;
+    }
+
+    map.instance = L.map('map', { zoomControl: true, scrollWheelZoom: true })
+      .fitBounds(QC_VIEW);
+
+    map.tiles = L.tileLayer(TILE_URL, {
+      attribution: TILE_ATTRIB,
+      maxZoom: 19,
+    }).addTo(map.instance);
+
+    map.instance.on('click', ev => lookupPoint(ev.latlng.lat, ev.latlng.lng));
+  }
+
+  // Draw the cell's real outline, not an approximation of it.
+  function drawOnMap(place, cell) {
+    if (!map.instance) return;
     const [hexLat, hexLon] = cell.hex;
-    const svg = $('#hexmap');
-    const geom = cell.geom && cell.geom.length
-      ? cell.geom
-      : regularHex();                       // fallback if a shard shipped without geometry
+    const ring = (cell.geom || []).map(([dlat, dlon]) => [hexLat + dlat, hexLon + dlon]);
 
-    // Work in km relative to the cell's reported point. That point is not the
-    // polygon's centre, so centre the drawing on the outline's own bounds and
-    // move the address dot by the same amount.
-    const pts = geom.map(([dlat, dlon]) => [dlon * kmPerLon(hexLat), dlat * kmPerLat]);
-    const xs = pts.map(p => p[0]);
-    const ys = pts.map(p => p[1]);
-    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-    const halfW = (Math.max(...xs) - Math.min(...xs)) / 2;
-    const halfH = (Math.max(...ys) - Math.min(...ys)) / 2;
-    const scale = Math.min(54 / halfW, 44 / halfH);
+    if (map.cell) map.cell.remove();
+    if (map.marker) map.marker.remove();
 
-    $('#hexshape').setAttribute('points',
-      pts.map(([x, y]) => `${((x - cx) * scale).toFixed(2)},${(-(y - cy) * scale).toFixed(2)}`).join(' '));
+    if (ring.length) {
+      map.cell = L.polygon(ring, {
+        color: cssVar('--ink') || '#0B2545',
+        weight: 2,
+        opacity: 0.85,
+        fillColor: cssVar('--ink') || '#0B2545',
+        fillOpacity: 0.08,
+      }).addTo(map.instance);
+    }
 
-    const px = ((place.lon - hexLon) * kmPerLon(hexLat) - cx) * scale;
-    const py = -((place.lat - hexLat) * kmPerLat - cy) * scale;
-    $('#hexpoint').setAttribute('transform', `translate(${px.toFixed(2)} ${py.toFixed(2)})`);
+    map.marker = L.circleMarker([place.lat, place.lon], {
+      radius: 6,
+      color: cssVar('--card') || '#fff',
+      weight: 2,
+      fillColor: cssVar('--fibre') || '#007F8C',
+      fillOpacity: 1,
+    }).addTo(map.instance);
 
-    const bar = 2 * scale;                  // a 2 km rule, so the cell has a real sense of size
-    const g = $('#scalebar');
-    g.querySelector('line').setAttribute('x1', -54);
-    g.querySelector('line').setAttribute('x2', -54 + bar);
-    g.querySelector('line').setAttribute('y1', 47);
-    g.querySelector('line').setAttribute('y2', 47);
-    const label = g.querySelector('text');
-    label.setAttribute('x', -54);
-    label.setAttribute('y', 51);
-    label.textContent = '2 km';
+    if (ring.length) map.instance.fitBounds(map.cell.getBounds(), { padding: [24, 24] });
+    else map.instance.setView([place.lat, place.lon], 12);
+  }
 
-    svg.setAttribute('aria-label', t().hexTitle);
-
+  function renderFacts(place, cell) {
     $('#fact-address').textContent = place.title;
     $('#fact-hexid').textContent = cell.hexid || '—';
     $('#fact-asof').textContent = state.meta ? state.meta.built : '—';
-  }
-
-  function regularHex() {
-    const out = [];
-    for (let i = 0; i < 7; i++) {
-      const a = (Math.PI / 3) * i;
-      out.push([0.024 * Math.sin(a), 0.040 * Math.cos(a)]);
-    }
-    return out;
   }
 
   /* ---------- rendering: providers ---------- */
@@ -463,33 +479,77 @@
     if (!r) return;
     $('#empty').hidden = true;
     $('#result').hidden = false;
-    drawCell(r.place, r.cell);
+    renderFacts(r.place, r.cell);
+    drawOnMap(r.place, r.cell);
     renderProviders(groupByTech(r.entries));
     renderPlans(r.entries);
   }
 
-  async function lookup(place) {
-    if (!inQuebec(place)) { showError('errOutside'); return; }
+  // A click on the map has coordinates but no address. Show the cell straight
+  // away and fill the address in afterwards, so the answer never waits on a
+  // reverse lookup that may not come.
+  async function lookupPoint(lat, lon) {
+    const place = { title: formatCoords(lat, lon), lat, lon };
+    const shown = await showCell(place, 'QC');
+    if (!shown) return;
+    const name = await reverseGeocode(lat, lon);
+    if (name && state.result && state.result.place === place) {
+      place.title = name;
+      $('#fact-address').textContent = name;
+    }
+  }
+
+  const formatCoords = (lat, lon) =>
+    `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+
+  async function reverseGeocode(lat, lon) {
+    try {
+      const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&lang=${state.lang}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const p = (data.features && data.features[0] && data.features[0].properties) || null;
+      if (!p) return null;
+      // Photon sometimes answers with a postal code as the feature name; the
+      // street or the locality is more use than "G1R 4S9".
+      const POSTAL = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+      const named = p.street || (p.name && !POSTAL.test(p.name.trim()) ? p.name : '');
+      const street = [p.housenumber, named].filter(Boolean).join(' ');
+      return [street, p.city || p.county, p.state].filter(Boolean).join(', ') || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Shared by address search and map clicks.
+  async function showCell(place, provinceHint) {
     state.shardsTried = 0;
     state.shardsLoaded = 0;
-    const cell = await findCell(place.lat, place.lon, provinceCode(place));
+    state.shardErrors = 0;
+    const cell = await findCell(place.lat, place.lon, provinceHint);
     if (!cell) {
-      // No shard answered at all: that is a broken client, not empty geography.
-      if (state.shardsTried && !state.shardsLoaded) {
-        if (await selfHealOnce()) return;
+      // A missing shard just means nothing is mapped there - the north, or out
+      // at sea. Only fetches that actually failed point at a broken client.
+      if (state.shardErrors && !state.shardsLoaded && navigator.onLine) {
+        if (await selfHealOnce()) return false;
         showError('errStaleClient');
-        return;
+        return false;
       }
       showError('errNoCell');
-      return;
+      return false;
     }
-
     state.result = {
       place,
       cell: { hex: cell.hex, geom: cell.geom, hexid: cell.hex[2] },
       entries: cell.hex[3],
     };
     showResult();
+    return true;
+  }
+
+  async function lookup(place) {
+    if (!inQuebec(place)) { showError('errOutside'); return; }
+    if (!await showCell(place, provinceCode(place))) return;
+
     const url = new URL(location.href);
     url.searchParams.set('q', place.title);
     history.replaceState(null, '', url);
@@ -615,6 +675,16 @@
         if (state.result) renderPlans(state.result.entries);
       });
     }
+
+    initMap();
+
+    // Small, deliberate test surface: lets a headless check drive a map click
+    // and read back the cell without synthesising mouse events.
+    window.QVB = {
+      lookupPoint,
+      map: () => map.instance,
+      cell: () => (state.result ? state.result.cell.hexid : null),
+    };
 
     const q = new URL(location.href).searchParams.get('q');
     if (q) { $('#address').value = q; runSearch(q); }

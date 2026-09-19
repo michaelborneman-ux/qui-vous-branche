@@ -193,31 +193,49 @@ h1 {
   padding: 1.25rem;
 }
 
-/* ---------- the signature: the coverage cell ---------- */
+/* ---------- the signature: the coverage cell on the map ---------- */
 
-.hexwrap { background: var(--paper); border-radius: var(--r); padding: 0.5rem; }
-.hexmap { display: block; width: 100%; height: auto; }
+.mapsection { margin: 0 0 1rem; }
 
-.hexshape {
-  fill: var(--hex-fill);
-  stroke: var(--ink);
-  stroke-width: 1.1;
-  stroke-dasharray: 340;
-  stroke-dashoffset: 340;
-  animation: draw 900ms ease-out forwards;
+.maphead {
+  display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap;
+  margin: 0 0 0.6rem;
 }
-@keyframes draw { to { stroke-dashoffset: 0; } }
+.maphead .panel-title { margin: 0; }
+.maphint { margin: 0; font-size: 0.82rem; color: var(--ink-2); }
 
-.pt { fill: var(--ink); }
-.pt-halo { fill: var(--ink); opacity: 0.14; animation: ping 1.6s ease-out 0.5s 1; }
-@keyframes ping { 0% { r: 3; opacity: 0.35; } 100% { r: 11; opacity: 0; } }
+#map {
+  height: clamp(280px, 46vh, 460px);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  cursor: crosshair;
+  z-index: 0;                  /* keep Leaflet panes under the suggestion list */
+}
+#map:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-.scalebar line { stroke: var(--ink-3); stroke-width: 0.8; }
-.scalebar text { fill: var(--ink-3); font-family: var(--mono); font-size: 4.2px; }
+/* Leaflet ships its own light chrome; align it with the page instead. */
+.leaflet-container { font-family: var(--body); background: var(--paper); }
+.leaflet-control-attribution {
+  background: var(--card) !important;
+  color: var(--ink-3) !important;
+  font-size: 0.66rem;
+}
+.leaflet-control-attribution a { color: var(--ink-2) !important; }
+.leaflet-bar a {
+  background: var(--card); color: var(--ink);
+  border-bottom-color: var(--line);
+}
+.leaflet-bar a:hover { background: var(--paper); color: var(--ink); }
 
-@media (prefers-reduced-motion: reduce) {
-  .hexshape { animation: none; stroke-dashoffset: 0; }
-  .pt-halo { animation: none; opacity: 0.14; }
+/* OSM has no dark tiles; invert them rather than ship a second tile source.
+   The cell outline and marker sit in other panes, so they keep their colours. */
+@media (prefers-color-scheme: dark) {
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9); }
+}
+
+.mapfallback {
+  margin: 0.6rem 0 0; font-size: 0.82rem; color: var(--ink-2);
 }
 
 .cellfacts { margin: 1rem 0 0; display: grid; gap: 0.55rem; }
