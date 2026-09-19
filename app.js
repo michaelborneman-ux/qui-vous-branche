@@ -55,9 +55,14 @@
     return [...keys];
   }
 
+  // Shards are cached cache-first and never revalidated, so the build stamp from
+  // meta.json (which is fetched network-first) goes in the URL. A data refresh
+  // changes every shard URL, which retires the old entries instead of leaving a
+  // client serving a previous build's shape forever.
   async function loadShard(key) {
     if (state.shards.has(key)) return state.shards.get(key);
-    const p = fetch(`data/hex/${key}.json`)
+    const stamp = state.meta && state.meta.built ? `?b=${state.meta.built}` : '';
+    const p = fetch(`data/hex/${key}.json${stamp}`)
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null);
     state.shards.set(key, p);
