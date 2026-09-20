@@ -39,6 +39,26 @@ row links to that provider's own address checker, which is the real answer.
 The map draws each cell's true outline, so the size of that claim is visible
 rather than described.
 
+### Mobile coverage and cell towers
+
+Mobile is reported by ISED as a technology like any other, but it answers a
+different question, so it has its own panel - and a cell with no mobile carrier
+says so explicitly, because an absent section reads as "not checked" rather than
+"nothing here". 2,377 of Quebec's 9,118 cells have no mobile carrier at all.
+
+The tower layer queries ISED's **spectrum licence database** live (ArcGIS, no
+key, CORS-enabled) for the current map bounds, filtered to the licence classes
+that carry phone service - CELL, PCS, AWS, BRS, 600B, 3500B and the rest - since
+the database also holds fixed links and backhaul that say nothing about
+coverage. One site holds many licences, so rows are collapsed by rounded
+position. It loads only above zoom 12, debounces panning, and drops results from
+a superseded pan.
+
+**This is not signal strength.** No free, licensable source publishes bars or
+dBm; carrier maps are proprietary and crowd-sourced ones are not reusable. The
+app reports where service is declared and where towers are licensed, which is a
+different and weaker claim.
+
 ### The map
 
 Leaflet over OpenStreetMap tiles, loaded from a CDN with SRI hashes. Clicking

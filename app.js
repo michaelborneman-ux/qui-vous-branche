@@ -9,7 +9,7 @@
   const QC_BOUNDS = { latMin: 44.9, latMax: 62.6, lonMin: -79.9, lonMax: -56.9 };
   const MAX_CELL_DIST_KM = 6;      // a hexagon is ~7 km across; beyond this there is no cell
   const STALE_DAYS = 90;
-  const TECH_ORDER = ['fibre', 'cable', 'dsl', 'fixedWireless', 'satellite', 'mobile'];
+  const TECH_ORDER = ['fibre', 'cable', 'dsl', 'fixedWireless', 'satellite'];
 
   const $ = sel => document.querySelector(sel);
   const el = (tag, cls, text) => {
@@ -246,6 +246,97 @@
     return inBounds(place);          // the title did not name a province
   }
 
+  /* ---------- cell towers ---------- */
+
+  // ISED's spectrum licence database, queried live: it needs no key, sends CORS
+  // headers, and is the only public record of where cell sites actually are.
+  // One physical site holds many licences, so rows are collapsed by position.
+  const TOWERS_URL =
+    'https://services.arcgis.com/wjcPoefzjpzCgffS/ArcGIS/rest/services/Spectrum_Licences_Site_Data/FeatureServer/0/query';
+
+  // Licence classes that carry mobile phone service. The rest of the database is
+  // fixed links, backhaul and point-to-point, which say nothing about coverage.
+  const MOBILE_SERVICES = "SERVICE IN ('CELL','PCS','PCSG','AWS','AWS-3','AWS-4','BRS','600B','3500B','MBS','WCS')";
+  const TOWER_MIN_ZOOM = 12;
+  const TOWER_MAX_ROWS = 1000;
+
+  async function fetchTowers(bounds) {
+    const env = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].join(',');
+    const url = TOWERS_URL + '?' + new URLSearchParams({
+      geometry: env,
+      geometryType: 'esriGeometryEnvelope',
+      inSR: '4326',
+      spatialRel: 'esriSpatialRelIntersects',
+      where: MOBILE_SERVICES,
+      outFields: 'LATITUDE,LONGITUDE,LICENSEE',
+      returnDistinctValues: 'true',
+      returnGeometry: 'false',
+      resultRecordCount: String(TOWER_MAX_ROWS),
+      f: 'json',
+    });
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('towers ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'towers error');
+
+    const sites = new Map();
+    for (const f of data.features || []) {
+      const a = f.attributes;
+      if (typeof a.LATITUDE !== 'number' || typeof a.LONGITUDE !== 'number') continue;
+      const key = a.LATITUDE.toFixed(4) + ',' + a.LONGITUDE.toFixed(4);
+      if (!sites.has(key)) sites.set(key, { lat: a.LATITUDE, lon: a.LONGITUDE, carriers: new Set() });
+      if (a.LICENSEE) sites.get(key).carriers.add(a.LICENSEE);
+    }
+    return { sites: [...sites.values()], truncated: !!data.exceededTransferLimit };
+  }
+
+  async function refreshTowers() {
+    if (!map.instance) return;
+    const note = $('#towers-note');
+
+    if (!map.towersOn) {
+      if (map.towers) { map.towers.clearLayers(); }
+      note.textContent = '';
+      return;
+    }
+    if (map.instance.getZoom() < TOWER_MIN_ZOOM) {
+      if (map.towers) map.towers.clearLayers();
+      note.textContent = t().towersZoom;
+      return;
+    }
+
+    note.textContent = t().towersLoading;
+    const token = ++map.towerToken;            // ignore results from a superseded pan
+    try {
+      const { sites, truncated } = await fetchTowers(map.instance.getBounds());
+      if (token !== map.towerToken || !map.towersOn) return;
+
+      if (!map.towers) map.towers = L.layerGroup().addTo(map.instance);
+      map.towers.clearLayers();
+
+      for (const site of sites) {
+        const carriers = [...site.carriers].sort();
+        L.circleMarker([site.lat, site.lon], {
+          radius: 4,
+          weight: 1,
+          color: cssVar('--card') || '#fff',
+          fillColor: cssVar('--mobile') || '#8A7B5C',
+          fillOpacity: 0.95,
+        })
+          .bindPopup(`<strong>${t().towerCarriers}</strong><br>${carriers.map(escapeHtml).join('<br>')}`)
+          .addTo(map.towers);
+      }
+      note.textContent = truncated ? t().towersTruncated(sites.length) : t().towersCount(sites.length);
+    } catch (err) {
+      if (token !== map.towerToken) return;
+      console.warn('tower layer unavailable', err);
+      note.textContent = t().towersFailed;
+    }
+  }
+
+  const escapeHtml = str => String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   /* ---------- the map ---------- */
 
   // Standard OpenStreetMap raster tiles. Dark mode is handled in CSS by
@@ -256,7 +347,10 @@
 
   const QC_VIEW = [[45.0, -79.5], [51.5, -61.0]];   // the populated part of Quebec
 
-  const map = { instance: null, tiles: null, cell: null, marker: null };
+  const map = {
+    instance: null, tiles: null, cell: null, marker: null,
+    towers: null, towersOn: false, towerToken: 0,
+  };
 
   const cssVar = name =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -277,6 +371,18 @@
     }).addTo(map.instance);
 
     map.instance.on('click', ev => lookupPoint(ev.latlng.lat, ev.latlng.lng));
+
+    let panTimer = null;
+    map.instance.on('moveend zoomend', () => {
+      clearTimeout(panTimer);
+      panTimer = setTimeout(refreshTowers, 350);   // one request per pause, not per frame
+    });
+
+    const toggle = $('#towers-toggle');
+    toggle.addEventListener('change', () => {
+      map.towersOn = toggle.checked;
+      refreshTowers();
+    });
   }
 
   // Draw the cell's real outline, not an approximation of it.
@@ -418,6 +524,34 @@
     }
   }
 
+  /* ---------- rendering: mobile coverage ---------- */
+
+  // ISED reports mobile as a technology like any other, but it answers a
+  // different question, so it gets its own panel - and the absence of any
+  // carrier is itself the answer, which a missing section would not convey.
+  function renderMobile(entries) {
+    const host = $('#mobile');
+    host.textContent = '';
+    const carriers = [...new Set(entries
+      .filter(([, tech]) => tech === 'mobile')
+      .map(([idx]) => state.providers[idx].name))].sort();
+
+    if (!carriers.length) {
+      const box = el('p', 'deadzone', t().mobileNone);
+      host.append(box);
+      return;
+    }
+
+    host.append(el('p', 'caveat mobile-lede', t().mobileCarriers));
+    const list = el('ul', 'isplist mobile-list');
+    for (const name of carriers) {
+      const li = el('li');
+      li.append(el('span', 'isp-name', name));
+      list.append(li);
+    }
+    host.append(list);
+  }
+
   /* ---------- rendering: plans ---------- */
 
   function matchPlans(entries) {
@@ -534,6 +668,7 @@
     renderFacts(r.place, r.cell);
     drawOnMap(r.place, r.cell);
     renderProviders(groupByTech(r.entries));
+    renderMobile(r.entries);
     renderPlans(r.entries);
   }
 
