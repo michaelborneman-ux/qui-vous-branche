@@ -1,5 +1,7 @@
 # Qui vous branche · Who wires you
 
+**Live: https://michaelborneman-ux.github.io/qui-vous-branche/**
+
 A static, installable PWA: type a Quebec address, see which internet providers
 operate a network in its coverage cell, on what technology, at what speed tier —
 and what the plans cost, as far as the plans are public.
@@ -144,7 +146,8 @@ rather than looking empty.
 npx http-server . -p 8133 -c-1
 ```
 
-Then open http://localhost:8133. Or use the `isp-finder` preview configuration. Deployment is GitHub Pages from
+Then open http://localhost:8133. Or use the `isp-finder` preview configuration.
+`.nojekyll` is committed so GitHub Pages serves the files as they are. Deployment is GitHub Pages from
 `main` — everything the browser needs is committed; `.cache/` is not.
 
 ## Data enums
