@@ -741,8 +741,21 @@
     const q = new URL(location.href).searchParams.get('q');
     if (q) { $('#address').value = q; runSearch(q); }
 
+    // Register, then actively check for a newer worker and reload once when it
+    // takes over, so a client cannot sit on a previous build indefinitely.
     if ('serviceWorker' in navigator) {
-      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || reloading) return;   // first install claims the page; that is not an update
+        reloading = true;
+        location.reload();
+      });
+      addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => reg.update())
+          .catch(() => {});
+      });
     }
   }
 

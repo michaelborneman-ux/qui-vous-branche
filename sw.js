@@ -1,12 +1,12 @@
 /* Bump CACHE on every shell change, or clients keep the old files. */
-const CACHE = 'qvb-v8';
+const CACHE = 'qvb-v9';
 
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=8',
-  'i18n.js?v=8',
-  'app.js?v=8',
+  'style.css?v=9',
+  'i18n.js?v=9',
+  'app.js?v=9',
   'manifest.webmanifest',
   'icons/icon.svg',
   'data/meta.json',
@@ -14,10 +14,13 @@ const SHELL = [
   'data/plans.json',
 ];
 
+// addAll is all-or-nothing: one missing file would fail the install, and the
+// previous worker would stay in control indefinitely, serving an old build.
+// Each file is cached on its own so a bad entry costs that entry only.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(SHELL))
+      .then(c => Promise.allSettled(SHELL.map(url => c.add(url))))
       .then(() => self.skipWaiting())
   );
 });
