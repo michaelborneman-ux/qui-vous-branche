@@ -890,6 +890,29 @@
 
   /* ---------- boot ---------- */
 
+  // Registered without waiting on the load event: init() awaits the data files
+  // first, and on a slower origin those resolve after load has already fired,
+  // so a load listener attached here would never run and the worker would
+  // never register. Checking readyState covers both orders.
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloading) return;   // the first install claims the page; that is not an update
+      reloading = true;
+      location.reload();
+    });
+
+    const register = () => navigator.serviceWorker.register('sw.js')
+      .then(reg => reg.update())
+      .catch(err => console.warn('service worker did not register', err));
+
+    if (document.readyState === 'complete') register();
+    else addEventListener('load', register, { once: true });
+  }
+
   async function init() {
     // Opened as a file:// document, the browser blocks every fetch of the
     // coverage data and refuses to register a service worker, so the app would
@@ -955,22 +978,7 @@
     const q = new URL(location.href).searchParams.get('q');
     if (q) { $('#address').value = q; runSearch(q); }
 
-    // Register, then actively check for a newer worker and reload once when it
-    // takes over, so a client cannot sit on a previous build indefinitely.
-    if ('serviceWorker' in navigator) {
-      const hadController = !!navigator.serviceWorker.controller;
-      let reloading = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!hadController || reloading) return;   // first install claims the page; that is not an update
-        reloading = true;
-        location.reload();
-      });
-      addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => reg.update())
-          .catch(() => {});
-      });
-    }
+    registerServiceWorker();
   }
 
   init();
