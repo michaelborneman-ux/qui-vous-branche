@@ -1,12 +1,12 @@
 /* Bump CACHE on every shell change, or clients keep the old files. */
-const CACHE = 'qvb-v11';
+const CACHE = 'qvb-v12';
 
 const SHELL = [
   './',
   'index.html',
-  'style.css?v=11',
-  'i18n.js?v=11',
-  'app.js?v=11',
+  'style.css?v=12',
+  'i18n.js?v=12',
+  'app.js?v=12',
   'manifest.webmanifest',
   'icons/icon.svg',
   'data/meta.json',

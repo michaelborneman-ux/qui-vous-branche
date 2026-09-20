@@ -257,18 +257,44 @@
   // Licence classes that carry mobile phone service. The rest of the database is
   // fixed links, backhaul and point-to-point, which say nothing about coverage.
   const MOBILE_SERVICES = "SERVICE IN ('CELL','PCS','PCSG','AWS','AWS-3','AWS-4','BRS','600B','3500B','MBS','WCS')";
+
+  // One network licenses under several legal names, and Fido runs on Rogers'
+  // radio network, so the raw LICENSEE field overstates how many operators are
+  // present. These are the only 15 licensees in Quebec, mapped to the network a
+  // phone would actually attach to.
+  const CARRIERS = [
+    { id: 'telus', label: 'Telus', colour: '#2E9E5B', match: /^telus/i, sql: "UPPER(LICENSEE) LIKE 'TELUS%'" },
+    { id: 'bell', label: 'Bell', colour: '#1B6CC4', match: /^bell/i, sql: "UPPER(LICENSEE) LIKE 'BELL%'" },
+    { id: 'rogers', label: 'Rogers / Fido', colour: '#C0392B', match: /^(rogers|fido)/i, sql: "(UPPER(LICENSEE) LIKE 'ROGERS%' OR UPPER(LICENSEE) LIKE 'FIDO%')" },
+    { id: 'videotron', label: 'Vidéotron', colour: '#D98B1F', match: /^vid[eé]otron/i, sql: "UPPER(LICENSEE) LIKE 'VID%'" },
+    { id: 'freedom', label: 'Freedom Mobile', colour: '#8E44AD', match: /^freedom/i, sql: "UPPER(LICENSEE) LIKE 'FREEDOM%'" },
+  ];
+  const OTHER_CARRIER = {
+    id: 'other', label: 'Autres / Other', colour: '#7A90A8',
+    get sql() { return 'NOT (' + CARRIERS.map(c => c.sql).join(' OR ') + ')'; },
+  };
+
+  const carrierOf = licensee =>
+    CARRIERS.find(c => c.match.test(String(licensee).trim())) || OTHER_CARRIER;
+
+  // 5G-era spectrum, worth distinguishing from the LTE bands.
+  const NR_BANDS = new Set(['600B', '3500B']);
   const TOWER_MIN_ZOOM = 12;
   const TOWER_MAX_ROWS = 1000;
 
-  async function fetchTowers(bounds) {
+  async function fetchTowers(bounds, carrierId) {
+    const carrier = carrierId
+      ? [...CARRIERS, OTHER_CARRIER].find(c => c.id === carrierId)
+      : null;
+    const where = MOBILE_SERVICES + (carrier ? ' AND ' + carrier.sql : '');
     const env = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].join(',');
     const url = TOWERS_URL + '?' + new URLSearchParams({
       geometry: env,
       geometryType: 'esriGeometryEnvelope',
       inSR: '4326',
       spatialRel: 'esriSpatialRelIntersects',
-      where: MOBILE_SERVICES,
-      outFields: 'LATITUDE,LONGITUDE,LICENSEE',
+      where,
+      outFields: 'LATITUDE,LONGITUDE,LICENSEE,SERVICE',
       returnDistinctValues: 'true',
       returnGeometry: 'false',
       resultRecordCount: String(TOWER_MAX_ROWS),
@@ -284,8 +310,11 @@
       const a = f.attributes;
       if (typeof a.LATITUDE !== 'number' || typeof a.LONGITUDE !== 'number') continue;
       const key = a.LATITUDE.toFixed(4) + ',' + a.LONGITUDE.toFixed(4);
-      if (!sites.has(key)) sites.set(key, { lat: a.LATITUDE, lon: a.LONGITUDE, carriers: new Set() });
-      if (a.LICENSEE) sites.get(key).carriers.add(a.LICENSEE);
+      if (!sites.has(key)) sites.set(key, { lat: a.LATITUDE, lon: a.LONGITUDE, carriers: new Map() });
+      const site = sites.get(key);
+      const carrier = carrierOf(a.LICENSEE);
+      if (!site.carriers.has(carrier.id)) site.carriers.set(carrier.id, { carrier, bands: new Set() });
+      if (a.SERVICE) site.carriers.get(carrier.id).bands.add(a.SERVICE);
     }
     return { sites: [...sites.values()], truncated: !!data.exceededTransferLimit };
   }
@@ -308,25 +337,43 @@
     note.textContent = t().towersLoading;
     const token = ++map.towerToken;            // ignore results from a superseded pan
     try {
-      const { sites, truncated } = await fetchTowers(map.instance.getBounds());
+      const { sites, truncated } = await fetchTowers(map.instance.getBounds(), map.towerCarrier);
       if (token !== map.towerToken || !map.towersOn) return;
 
       if (!map.towers) map.towers = L.layerGroup().addTo(map.instance);
       map.towers.clearLayers();
 
+      let shown = 0;
+
       for (const site of sites) {
-        const carriers = [...site.carriers].sort();
+        const entries = [...site.carriers.values()]
+          .sort((a, b) => a.carrier.label.localeCompare(b.carrier.label));
+        if (!entries.length) continue;
+        shown++;
+
+        // A site shared by several networks gets the neutral ink dot; a
+        // single-carrier site is drawn in that carrier's colour.
+        const colour = entries.length === 1 ? entries[0].carrier.colour : (cssVar('--ink') || '#0B2545');
+
+        const rows = entries.map(e => {
+          const bands = [...e.bands].sort();
+          const nr = bands.some(b => NR_BANDS.has(b));
+          return `<span style="color:${e.carrier.colour}">●</span> <strong>${escapeHtml(e.carrier.label)}</strong>`
+            + `<br><span class="tower-bands">${escapeHtml(bands.join(', '))}${nr ? ' · 5G' : ''}</span>`;
+        });
+
         L.circleMarker([site.lat, site.lon], {
-          radius: 4,
+          radius: entries.length > 1 ? 5 : 4,
           weight: 1,
           color: cssVar('--card') || '#fff',
-          fillColor: cssVar('--mobile') || '#8A7B5C',
+          fillColor: colour,
           fillOpacity: 0.95,
         })
-          .bindPopup(`<strong>${t().towerCarriers}</strong><br>${carriers.map(escapeHtml).join('<br>')}`)
+          .bindPopup(`<strong>${t().towerCarriers}</strong><br>${rows.join('<br>')}`)
           .addTo(map.towers);
       }
-      note.textContent = truncated ? t().towersTruncated(sites.length) : t().towersCount(sites.length);
+
+      note.textContent = truncated ? t().towersTruncated(shown) : t().towersCount(shown);
     } catch (err) {
       if (token !== map.towerToken) return;
       console.warn('tower layer unavailable', err);
@@ -349,7 +396,7 @@
 
   const map = {
     instance: null, tiles: null, cell: null, marker: null,
-    towers: null, towersOn: false, towerToken: 0,
+    towers: null, towersOn: false, towerToken: 0, towerCarrier: '',
   };
 
   const cssVar = name =>
@@ -381,8 +428,30 @@
     const toggle = $('#towers-toggle');
     toggle.addEventListener('change', () => {
       map.towersOn = toggle.checked;
+      $('#tower-carrier').disabled = !toggle.checked;
+      $('#tower-legend').hidden = !toggle.checked;
       refreshTowers();
     });
+
+    const picker = $('#tower-carrier');
+    for (const c of [...CARRIERS, OTHER_CARRIER]) {
+      const opt = el('option', null, c.label);
+      opt.value = c.id;
+      picker.append(opt);
+    }
+    picker.addEventListener('change', () => {
+      map.towerCarrier = picker.value;
+      refreshTowers();
+    });
+
+    const legend = $('#tower-legend');
+    for (const c of [...CARRIERS, OTHER_CARRIER]) {
+      const chip = el('span', 'legend-chip');
+      const dot = el('span', 'legend-dot');
+      dot.style.background = c.colour;
+      chip.append(dot, document.createTextNode(c.label));
+      legend.append(chip);
+    }
   }
 
   // Draw the cell's real outline, not an approximation of it.

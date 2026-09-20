@@ -54,6 +54,19 @@ coverage. One site holds many licences, so rows are collapsed by rounded
 position. It loads only above zoom 12, debounces panning, and drops results from
 a superseded pan.
 
+Each site is colour-coded by network with a legend, and the popup lists the
+networks present and their spectrum bands, flagging 5G where 600B or 3500B is
+licensed. A carrier filter narrows the layer to one network.
+
+The filter is applied **in the query, not after it**: the service caps results
+at 1,000 rows, so filtering client-side silently dropped sites that were never
+returned - Bell showed 30 in downtown Montreal when the true figure was 38.
+
+Licensee names are normalised to the network a phone attaches to. Quebec has
+only 15 distinct licensees, and several are one operator - `TELUS
+Communications Inc.`, `Telus - Regulatory Affairs` and `TELUS Communications
+Company` are all Telus, and Fido runs on Rogers' radio network.
+
 **This is not signal strength.** No free, licensable source publishes bars or
 dBm; carrier maps are proprietary and crowd-sourced ones are not reusable. The
 app reports where service is declared and where towers are licensed, which is a
