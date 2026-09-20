@@ -67,6 +67,7 @@ window.I18N = {
     errNoCell: { t: 'Aucune donnée pour ce point', b: "Aucune cellule de couverture ne correspond. Essayez une adresse voisine." },
     errNetwork: { t: 'Recherche impossible', b: "Le service de géolocalisation n'a pas répondu. Vérifiez votre connexion et réessayez." },
     errStaleClient: { t: 'Données non chargées', b: "Les données de couverture n'ont pas pu être chargées. Rechargez la page ; si le problème persiste, ouvrez ?reset=1." },
+    errFileProtocol: { t: 'Ouvrez cette page depuis un serveur', b: "Le fichier a été ouvert directement (file://). Le navigateur bloque alors le chargement des données de couverture. Démarrez un serveur local — npx http-server . -p 8133 — puis ouvrez http://localhost:8133." },
     errOffline: { t: 'Hors ligne', b: "La recherche d'adresse a besoin d'Internet. Les résultats déjà consultés restent accessibles." },
   },
 
@@ -137,6 +138,7 @@ window.I18N = {
     errNoCell: { t: 'No data for this point', b: 'No coverage cell matches it. Try a nearby address.' },
     errNetwork: { t: 'Search failed', b: 'The geolocation service did not respond. Check your connection and try again.' },
     errStaleClient: { t: 'Coverage data did not load', b: 'The coverage data could not be loaded. Reload the page; if it keeps happening, open ?reset=1.' },
+    errFileProtocol: { t: 'Open this page from a server', b: 'The file was opened directly (file://), so the browser blocks the coverage data from loading. Start a local server — npx http-server . -p 8133 — then open http://localhost:8133.' },
     errOffline: { t: 'Offline', b: 'Address search needs a connection. Results you already viewed still work.' },
   },
 };

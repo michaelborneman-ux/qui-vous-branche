@@ -687,6 +687,16 @@
   /* ---------- boot ---------- */
 
   async function init() {
+    // Opened as a file:// document, the browser blocks every fetch of the
+    // coverage data and refuses to register a service worker, so the app would
+    // look empty for no visible reason. Say so instead.
+    if (location.protocol === 'file:') {
+      applyLang();
+      $('#mapsection').hidden = true;
+      showError('errFileProtocol');
+      return;
+    }
+
     if (new URL(location.href).searchParams.get('reset')) {
       await resetClient();
       location.replace(location.pathname);

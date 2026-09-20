@@ -134,11 +134,17 @@ through `ridesOn`, not through the cell's own provider list.
 
 ## Running it
 
+**It has to be served over http.** Opening `index.html` by double-clicking it
+gives a `file://` page, where the browser blocks every fetch of the coverage
+data, refuses to register a service worker, and sends no Referer - which makes
+OpenStreetMap return blocked tiles. The app detects that case and says so
+rather than looking empty.
+
 ```bash
 npx http-server . -p 8133 -c-1
 ```
 
-Or use the `isp-finder` preview configuration. Deployment is GitHub Pages from
+Then open http://localhost:8133. Or use the `isp-finder` preview configuration. Deployment is GitHub Pages from
 `main` — everything the browser needs is committed; `.cache/` is not.
 
 ## Data enums
