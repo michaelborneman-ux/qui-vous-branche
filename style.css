@@ -115,6 +115,20 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad) 4rem; }
 
 .hero { padding: clamp(2rem, 7vw, 4.5rem) 0 2rem; max-width: 40rem; }
 
+/* Above 1000px the hero alone left half the window empty while the map, which
+   is the thing people actually use, sat below the fold. They now share it. */
+.top { display: grid; gap: 0 3rem; }
+
+@media (min-width: 1000px) {
+  .top {
+    grid-template-columns: minmax(20rem, 26rem) 1fr;
+    align-items: end;
+  }
+  .top .hero { padding-bottom: 2.5rem; max-width: none; }
+  .top .mapsection { padding: clamp(2rem, 7vw, 4.5rem) 0 2.5rem; }
+  #map { height: clamp(320px, 52vh, 520px); }
+}
+
 .eyebrow {
   font-family: var(--mono); font-size: 0.7rem; font-weight: 600;
   letter-spacing: 0.14em; text-transform: uppercase;
@@ -137,7 +151,7 @@ h1 {
 .search { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .search input {
-  flex: 1 1 18rem; min-width: 0;
+  flex: 1 1 12rem; min-width: 0;
   font: inherit; color: var(--ink);
   padding: 0.85rem 1rem;
   background: var(--card);
@@ -148,6 +162,8 @@ h1 {
 .search input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
 
 .go {
+  flex: 0 0 auto;
+  min-width: 8rem;
   font-family: var(--display); font-variation-settings: "wdth" 112; font-weight: 700;
   font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase;
   padding: 0.85rem 1.4rem; cursor: pointer;
@@ -157,6 +173,10 @@ h1 {
 .go:hover { background: var(--go-hover); border-color: var(--go-hover); }
 .go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .go[disabled] { opacity: 0.55; cursor: progress; }
+
+/* On a narrow column the button wraps to its own line, where a content-width
+   control reads as an orphan - let it take the line. */
+@media (max-width: 34rem) { .go { flex: 1 1 100%; } }
 
 .suggestions {
   list-style: none; margin: 0.5rem 0 0; padding: 0;
@@ -185,6 +205,10 @@ h1 {
   .result { grid-template-columns: minmax(280px, 340px) 1fr; }
   #plans-panel { grid-column: 1 / -1; }
 }
+
+/* One block, not two grid items: as separate items the second one waited for
+   the tall providers panel to finish its row and left an L-shaped hole. */
+.sidebar { display: grid; gap: 1rem; align-content: start; }
 
 .cell-readout, .panel {
   background: var(--card);
@@ -228,10 +252,12 @@ h1 {
 }
 .leaflet-bar a:hover { background: var(--paper); color: var(--ink); }
 
-/* OSM has no dark tiles; invert them rather than ship a second tile source.
-   The cell outline and marker sit in other panes, so they keep their colours. */
+/* OSM ships no dark tiles. Inverting them turned landcover into swampy green
+   and stopped reading as a map, so the tiles are dimmed instead: still a
+   recognisable map, quiet enough to sit on a dark page. The cell outline and
+   markers live in other panes and keep their colours. */
 @media (prefers-color-scheme: dark) {
-  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9); }
+  .leaflet-tile-pane { filter: brightness(0.7) contrast(1.05) saturate(0.75); }
 }
 
 /* map tools */
@@ -279,7 +305,7 @@ h1 {
 /* mobile coverage */
 
 .mobile-lede { margin-top: 0; }
-.mobile-list { border-left-color: var(--mobile); }
+.mobile-list { --tech: var(--mobile); }
 .deadzone {
   margin: 0; padding: 0.85rem 1rem;
   border-left: 3px solid var(--warn);
@@ -330,7 +356,12 @@ h1 {
 }
 .isplist li { display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
 .isp-name { font-weight: 600; }
-.isp-link { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); }
+.isp-link {
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--ink-3); text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.isp-link:hover { color: var(--ink); border-bottom-color: var(--line); }
 .isp-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ---------- plans ---------- */

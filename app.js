@@ -392,7 +392,7 @@
   const TILE_ATTRIB =
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  const QC_VIEW = [[45.0, -79.5], [51.5, -61.0]];   // the populated part of Quebec
+  const QC_VIEW = [[45.0, -76.5], [50.0, -64.0]];   // the populated part of Quebec
 
   const map = {
     instance: null, tiles: null, cell: null, marker: null,
@@ -416,6 +416,13 @@
       attribution: TILE_ATTRIB,
       maxZoom: 19,
     }).addTo(map.instance);
+
+    // Leaflet measures its container on creation, before web fonts and the
+    // grid have settled, which leaves the tiles offset inside it.
+    const resize = () => map.instance && map.instance.invalidateSize();
+    setTimeout(resize, 300);
+    addEventListener('resize', resize);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
 
     map.instance.on('click', ev => lookupPoint(ev.latlng.lat, ev.latlng.lng));
 

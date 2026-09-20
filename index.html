@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
       integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
       crossorigin="anonymous" referrerpolicy="no-referrer">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
 </header>
 
 <main>
+  <div class="top">
   <section class="hero">
     <p class="eyebrow" data-i18n="eyebrow">Données ISED/CRTC · Québec</p>
     <h1 data-i18n="headline">Qui peut brancher votre adresse&nbsp;?</h1>
@@ -67,27 +68,30 @@
     <div id="map" role="application" aria-label="Carte de couverture"></div>
     <p class="mapfallback" id="map-fallback" hidden data-i18n="mapOffline">La carte a besoin d'une connexion. La recherche par adresse fonctionne toujours.</p>
   </section>
+  </div>
 
   <section class="result" id="result" hidden aria-live="polite">
 
-    <div class="cell-readout">
-      <dl class="cellfacts">
-        <div><dt data-i18n="cellAddress">Adresse</dt><dd id="fact-address">—</dd></div>
-        <div><dt data-i18n="cellId">Cellule</dt><dd class="mono" id="fact-hexid">—</dd></div>
-        <div><dt data-i18n="cellSize">Superficie</dt><dd class="mono" id="fact-size">~25 km²</dd></div>
-        <div><dt data-i18n="cellAsOf">Données</dt><dd class="mono" id="fact-asof">—</dd></div>
-      </dl>
-      <p class="caveat" data-i18n="caveat">Ces fournisseurs exploitent un réseau dans cette cellule d'environ 25 km². Ce n'est pas une confirmation de service à votre porte : validez auprès du fournisseur.</p>
+    <div class="sidebar">
+      <div class="cell-readout">
+        <dl class="cellfacts">
+          <div><dt data-i18n="cellAddress">Adresse</dt><dd id="fact-address">—</dd></div>
+          <div><dt data-i18n="cellId">Cellule</dt><dd class="mono" id="fact-hexid">—</dd></div>
+          <div><dt data-i18n="cellSize">Superficie</dt><dd class="mono" id="fact-size">~25 km²</dd></div>
+          <div><dt data-i18n="cellAsOf">Données</dt><dd class="mono" id="fact-asof">—</dd></div>
+        </dl>
+        <p class="caveat" data-i18n="caveat">Ces fournisseurs exploitent un réseau dans cette cellule d'environ 25 km². Ce n'est pas une confirmation de service à votre porte : validez auprès du fournisseur.</p>
+      </div>
+
+      <div class="panel" id="mobile-panel">
+        <h2 class="panel-title" data-i18n="mobileTitle">Couverture cellulaire</h2>
+        <div id="mobile"></div>
+      </div>
     </div>
 
-    <div class="panel">
-      <h2 class="panel-title" data-i18n="providersTitle">Fournisseurs dans la cellule</h2>
+    <div class="panel" id="providers-panel">
+      <h2 class="panel-title" data-i18n="providersTitle">Fournisseurs Internet à domicile</h2>
       <div id="providers"></div>
-    </div>
-
-    <div class="panel" id="mobile-panel">
-      <h2 class="panel-title" data-i18n="mobileTitle">Couverture cellulaire</h2>
-      <div id="mobile"></div>
     </div>
 
     <div class="panel" id="plans-panel">
@@ -121,7 +125,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
         integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="i18n.js?v=13"></script>
-<script src="app.js?v=13"></script>
+<script src="i18n.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
