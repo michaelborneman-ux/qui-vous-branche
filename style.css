@@ -367,12 +367,13 @@ h1 {
 /* ---------- plans ---------- */
 
 .sortgroup { display: flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.sort-btn {
+.sort-btn, .rsort-btn {
   appearance: none; border: 0; background: transparent; cursor: pointer;
   font-family: var(--mono); font-size: 0.7rem; padding: 0.3rem 0.6rem; color: var(--ink-2);
 }
-.sort-btn + .sort-btn { border-left: 1px solid var(--line); }
-.sort-btn.is-on { background: var(--ink); color: var(--card); }
+.sort-btn + .sort-btn, .rsort-btn + .rsort-btn { border-left: 1px solid var(--line); }
+.sort-btn.is-on, .rsort-btn.is-on { background: var(--ink); color: var(--card); }
+.sort-btn:focus-visible, .rsort-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 
 .plan {
   display: grid; gap: 0.25rem 1rem; align-items: baseline;
@@ -399,6 +400,105 @@ h1 {
 .plan-price s { color: var(--ink-3); font-weight: 400; font-size: 0.8rem; }
 .plan-meta { grid-column: 1 / -1; font-size: 0.76rem; color: var(--ink-3); display: flex; gap: 0.9rem; flex-wrap: wrap; }
 .plan-meta a { color: var(--ink-2); }
+
+/* ---------- saving a rental ---------- */
+
+.save-row { margin: 1rem 0 0; display: grid; gap: 0.4rem; }
+
+.save-btn {
+  justify-self: start;
+  font-family: var(--display); font-variation-settings: "wdth" 112; font-weight: 700;
+  font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0.55rem 0.9rem; cursor: pointer;
+  color: var(--ink); background: transparent;
+  border: 1.5px solid var(--ink); border-radius: var(--r);
+}
+.save-btn:hover { background: var(--ink); color: var(--card); }
+.save-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.save-btn.is-saved, .save-btn.is-saved:hover {
+  cursor: default; color: var(--satellite); border-color: var(--satellite); background: transparent;
+}
+
+.pending-listing {
+  margin: 0; font-size: 0.74rem; line-height: 1.4; color: var(--ink-3);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* ---------- my rentals ---------- */
+
+.rentals { margin: 1rem 0 0; }
+.rentals-note { margin: 0 0 0.9rem; }
+
+.rental { padding: 0.85rem 0; border-top: 1px solid var(--line-2); display: grid; gap: 0.5rem; }
+.rental:first-child { border-top: 0; padding-top: 0.2rem; }
+
+.rental-head { display: flex; align-items: center; gap: 0.6rem; }
+
+.rental-addr {
+  flex: 1 1 auto; min-width: 0; text-align: left;
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rental-addr:hover { text-decoration: underline; text-underline-offset: 3px; }
+.rental-addr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.rental-rent, .rental-note {
+  font: inherit; font-size: 0.85rem; color: var(--ink);
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 0.35rem 0.5rem;
+}
+.rental-rent { flex: 0 0 6.5rem; width: 6.5rem; font-family: var(--mono); text-align: right; }
+.rental-note { flex: 1 1 auto; min-width: 0; }
+.rental-rent:focus-visible, .rental-note:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.rental-del {
+  flex: none; appearance: none; cursor: pointer;
+  width: 1.9rem; height: 1.9rem; line-height: 1;
+  font-size: 1.15rem; color: var(--ink-3);
+  background: transparent; border: 1px solid transparent; border-radius: var(--r);
+}
+.rental-del:hover { color: var(--warn); border-color: var(--line); }
+.rental-del:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip {
+  font-family: var(--mono); font-size: 0.66rem; line-height: 1.3;
+  padding: 0.18rem 0.45rem; border-radius: 2px;
+  border: 1px solid var(--line); color: var(--ink-2);
+}
+.chip-fibre { border-color: var(--fibre); color: var(--fibre); }
+.chip-cable { border-color: var(--cable); color: var(--cable); }
+.chip-mobile { border-color: var(--mobile); color: var(--mobile); }
+.chip-warn { border-color: var(--warn); color: var(--warn); }
+.chip-muted { color: var(--ink-3); }
+
+.rental-foot { display: flex; align-items: center; gap: 0.75rem; }
+
+.rentals-foot {
+  display: flex; gap: 1rem; margin: 0.9rem 0 0; padding-top: 0.8rem;
+  border-top: 1px solid var(--line-2);
+}
+.link-btn {
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.link-btn:hover { color: var(--ink); }
+.link-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.rental-pop { display: grid; gap: 0.2rem; min-width: 12rem; }
+.rental-pop-rent { font-family: var(--mono); font-weight: 600; }
+.rental-pop-warn { color: var(--warn); }
+.rental-pop-actions { display: flex; gap: 0.8rem; margin-top: 0.35rem; }
+
+@media (max-width: 34rem) {
+  .rental-head { flex-wrap: wrap; }
+  .rental-addr { flex-basis: 100%; white-space: normal; }
+  .rental-rent { flex: 1 1 auto; width: auto; text-align: left; }
+  .rental-foot { flex-wrap: wrap; }
+  .rental-note { flex-basis: 100%; }
+}
 
 /* ---------- empty / errors ---------- */
 

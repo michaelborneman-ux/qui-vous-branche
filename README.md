@@ -39,6 +39,42 @@ row links to that provider's own address checker, which is the real answer.
 The map draws each cell's true outline, so the size of that claim is visible
 rather than described.
 
+### Rentals: yours, not a feed
+
+The app cannot show *available* rentals. CREA DDF needs CREA membership;
+Centris, Quebec's MLS, has no public API and grants access only per brokerage;
+Kijiji, Marketplace, Kangalou, Louer.com, Rentals.ca and Zumper offer no API at
+all, and scraping them is against their terms. Any licensed feed would also need
+a backend, which a static site can't have.
+
+What it does instead is put **the rentals you're considering** on the map:
+
+- **Share from Android** — on any listing page, Share → *Qui vous branche*. The
+  manifest's `share_target` (GET, absolute `action`, which Android requires)
+  opens the app with the listing's `title`, `text` and `url`. Centris URLs carry
+  no street address, but the page title does — `…à louer à Montréal
+  (Ville-Marie), Montréal (Île), 370, Rue Saint-André, app. 1106, 20626727 -
+  Centris.ca` — so sharing works where pasting the link can't. REALTOR.ca's URL
+  slug *is* the address.
+- **Paste** a REALTOR.ca link or listing text into the search box. A bare
+  Centris or Kijiji link is refused with an explanation rather than guessed.
+
+`listing.js` does the extraction as pure functions (tested by
+`node tools/test-listing.js`, 40 cases built from strings captured off the live
+sites). Saved rentals live in `localStorage` on that device, with Export/Import
+as JSON; every save and import passes through one normaliser, which drops
+entries without coordinates and any non-http(s) link.
+
+**Geocoder results are checked, not trusted.** Asked for 370 Rue Saint-André,
+Montréal, NRCan's only street was a Rue Saint-André in Saint-André-Avellin,
+150 km away, with the civic number silently dropped. NRCan and Photon are now
+queried together and merged, and a result is taken automatically only when
+`matchesCandidate` finds the civic number, a distinctive street word and the
+city in it. Otherwise the person picks from suggestions.
+
+After changing the manifest, an installed PWA must be **uninstalled and
+reinstalled** on Android before the share target appears: Android caches it.
+
 ### Mobile coverage and cell towers
 
 Mobile is reported by ISED as a technology like any other, but it answers a

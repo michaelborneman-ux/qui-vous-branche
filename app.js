@@ -31,6 +31,9 @@
     shardsTried: 0,
     shardsLoaded: 0,
     shardErrors: 0,
+    rentals: [],
+    rentalSort: 'added',
+    pendingListing: null,              // {title, url} of a shared or pasted listing
   };
 
   // A wedged client - an old service worker, a half-written cache - otherwise
@@ -149,18 +152,36 @@
 
   /* ---------- geocoding ---------- */
 
-  // NRCan is the primary geocoder: it is Canadian, needs no key and handles
-  // accented Quebec addresses. It redirects to another host that intermittently
-  // answers without CORS headers, so Photon backs it up rather than letting a
-  // single flaky response look like "address not found".
+  // NRCan and Photon are asked together and their answers merged. Neither is
+  // enough alone: NRCan intermittently answers without CORS headers, and it
+  // also has gaps - asked for 370 Rue Saint-André, Montréal, its only street
+  // was a Rue Saint-André in Saint-André-Avellin, 150 km away, while Photon had
+  // the building. Using NRCan whenever it answered at all let confident wrong
+  // results win. Results that carry the query's civic number, street and city
+  // now rank first, from whichever source found them.
   async function geocode(query) {
-    try {
-      const rows = await geocodeNRCan(query);
-      if (rows.length) return rows;
-    } catch (err) {
-      console.warn('NRCan geocoder unavailable, falling back to Photon', err);
-    }
-    return geocodePhoton(query);
+    const [nrcan, photon] = await Promise.allSettled([geocodeNRCan(query), geocodePhoton(query)]);
+    if (nrcan.status === 'rejected' && photon.status === 'rejected') throw nrcan.reason;
+    if (nrcan.status === 'rejected') console.warn('NRCan geocoder unavailable', nrcan.reason);
+
+    const rows = [
+      ...(nrcan.status === 'fulfilled' ? nrcan.value : []),
+      ...(photon.status === 'fulfilled' ? photon.value : []),
+    ];
+
+    // The same place often comes back twice - from both sources, or from Photon
+    // once as "QC" and once as "Québec" - so rows within ~10 m are one place.
+    const { fold, matchesCandidate } = window.QVBListing;
+    const seen = new Set();
+    const unique = rows.filter(p => {
+      const keys = [fold(p.title), `${p.lat.toFixed(4)},${p.lon.toFixed(4)}`];
+      if (keys.some(k => seen.has(k))) return false;
+      keys.forEach(k => seen.add(k));
+      return true;
+    });
+
+    const rank = p => score(p) + (matchesCandidate(p.title, query) ? 8 : 0);
+    return unique.sort((a, b) => rank(b) - rank(a)).slice(0, 6);
   }
 
   async function geocodePhoton(query) {
@@ -174,7 +195,9 @@
         const p = f.properties;
         const street = [p.housenumber, p.street || p.name].filter(Boolean).join(' ');
         return {
-          title: [street, p.city || p.county, p.state].filter(Boolean).join(', '),
+          // Photon names the province "QC" on some features; the title's last
+          // segment is how inQuebec() reads the province, so spell it out.
+          title: [street, p.city || p.county, p.state === 'QC' ? 'Québec' : p.state].filter(Boolean).join(', '),
           lon: f.geometry.coordinates[0],
           lat: f.geometry.coordinates[1],
           kind: p.street || p.housenumber ? 'Street' : 'Geoname',
@@ -397,6 +420,7 @@
   const map = {
     instance: null, tiles: null, cell: null, marker: null,
     towers: null, towersOn: false, towerToken: 0, towerCarrier: '',
+    rentalsLayer: null, rentalsOn: false,
   };
 
   const cssVar = name =>
@@ -439,6 +463,9 @@
       $('#tower-legend').hidden = !toggle.checked;
       refreshTowers();
     });
+
+    $('#rentals-toggle').addEventListener('change', ev => setRentalsLayer(ev.target.checked));
+    if (state.rentals.length) setRentalsLayer(true);
 
     const picker = $('#tower-carrier');
     for (const c of [...CARRIERS, OTHER_CARRIER]) {
@@ -726,14 +753,397 @@
   const money = n => new Intl.NumberFormat(state.lang === 'fr' ? 'fr-CA' : 'en-CA',
     { style: 'currency', currency: 'CAD', minimumFractionDigits: 2 }).format(n);
 
+  /* ---------- rentals: listings you are considering ---------- */
+
+  // No open or licensable source offers Quebec rental listings (MLS feeds need
+  // a REALTOR® sponsor or per-brokerage Centris approval; Kijiji and the rest
+  // have no API), so the map shows the rentals *you* bring to it - shared from
+  // a listing page or pasted - and keeps them on this device.
+  const RENTALS_KEY = 'qvb.rentals';
+  const MAX_RENTALS = 500;
+
+  // Listing links end up as hrefs, and a shared or imported one is untrusted.
+  const safeUrl = u => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '');
+
+  function loadRentals() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RENTALS_KEY) || '[]');
+      return Array.isArray(raw) ? raw.map(normaliseRental).filter(Boolean) : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function persistRentals() {
+    try {
+      localStorage.setItem(RENTALS_KEY, JSON.stringify(state.rentals));
+      return true;
+    } catch (err) {
+      return false;                        // private mode or a full quota: the list still works this session
+    }
+  }
+
+  // Everything that reaches storage, from a save or an import, passes through
+  // here, so a malformed or hostile file cannot put odd shapes into the UI.
+  function normaliseRental(r) {
+    if (!r || typeof r !== 'object') return null;
+    const lat = Number(r.lat), lon = Number(r.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !r.address) return null;
+    const list = v => (Array.isArray(v) ? v.map(String).slice(0, 20) : []);
+    const sum = r.summary || {};
+    const rent = r.rent === null || r.rent === '' || r.rent === undefined ? null : Number(r.rent);
+    return {
+      id: String(r.id || 'r' + Math.random().toString(36).slice(2, 10)).slice(0, 40),
+      title: String(r.title || '').slice(0, 300),
+      url: safeUrl(r.url),
+      address: String(r.address).slice(0, 300),
+      lat, lon,
+      cellId: String(r.cellId || '').slice(0, 20),
+      rent: Number.isFinite(rent) ? rent : null,
+      note: String(r.note || '').slice(0, 500),
+      addedAt: String(r.addedAt || new Date().toISOString().slice(0, 10)).slice(0, 10),
+      summary: {
+        wired: Number(sum.wired) || 0,
+        fibre: list(sum.fibre),
+        cable: list(sum.cable),
+        mobile: list(sum.mobile),
+      },
+    };
+  }
+
+  // What the comparison needs, taken from the cell at save time so the list
+  // renders without refetching a shard per rental.
+  function summarize(entries) {
+    const names = tech => [...new Set(entries
+      .filter(([, t]) => t === tech)
+      .map(([idx]) => state.providers[idx] && state.providers[idx].name)
+      .filter(Boolean))].sort();
+    const wired = entries
+      .filter(([, t]) => t === 'fibre' || t === 'cable' || t === 'dsl')
+      .reduce((m, [, , speed]) => Math.max(m, speed || 0), 0);
+    return { wired, fibre: names('fibre'), cable: names('cable'), mobile: names('mobile') };
+  }
+
+  function findSaved(result) {
+    if (!result) return null;
+    const pending = state.pendingListing;
+    const url = pending && pending.url;
+    return state.rentals.find(r =>
+      (url && r.url === url) ||
+      (r.address === result.place.title && r.cellId === result.cell.hexid)) || null;
+  }
+
+  function renderSaveState() {
+    const btn = $('#save-rental');
+    const note = $('#pending-listing');
+    const saved = findSaved(state.result);
+    btn.textContent = saved ? t().savedRental : t().saveRental;
+    btn.classList.toggle('is-saved', !!saved);
+    btn.disabled = !!saved;
+
+    const pending = state.pendingListing;
+    if (pending && pending.title) {
+      note.textContent = t().pendingListing(pending.title);
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+  }
+
+  function saveCurrent() {
+    const r = state.result;
+    if (!r || findSaved(r)) return;
+    if (state.rentals.length >= MAX_RENTALS) return;
+    const pending = state.pendingListing || {};
+    const rental = normaliseRental({
+      id: 'r' + Date.now().toString(36),
+      title: pending.title || '',
+      url: pending.url || '',
+      address: r.place.title,
+      lat: r.place.lat,
+      lon: r.place.lon,
+      cellId: r.cell.hexid,
+      rent: null,
+      note: '',
+      addedAt: new Date().toISOString().slice(0, 10),
+      summary: summarize(r.entries),
+    });
+    if (!rental) return;
+    state.rentals.push(rental);
+    persistRentals();
+    renderSaveState();
+    renderRentals();
+    if (map.instance && !map.rentalsOn) setRentalsLayer(true);
+    else refreshRentalsLayer();
+    showToast(t().savedToast);
+  }
+
+  function removeRental(id) {
+    state.rentals = state.rentals.filter(r => r.id !== id);
+    persistRentals();
+    renderRentals();
+    refreshRentalsLayer();
+    renderSaveState();
+  }
+
+  function updateRental(id, patch) {
+    const r = state.rentals.find(x => x.id === id);
+    if (!r) return;
+    Object.assign(r, patch);
+    persistRentals();
+    refreshRentalsLayer();
+  }
+
+  // Show a saved rental the same way a search would, from its stored point.
+  async function showRental(rental) {
+    state.pendingListing = { title: rental.title, url: rental.url };
+    const ok = await showCell({ title: rental.address, lat: rental.lat, lon: rental.lon }, 'QC');
+    if (ok) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const rentalSorters = {
+    added: (a, b) => a.addedAt.localeCompare(b.addedAt),
+    rent: (a, b) => (a.rent == null ? Infinity : a.rent) - (b.rent == null ? Infinity : b.rent),
+    internet: (a, b) =>
+      (b.summary.fibre.length > 0) - (a.summary.fibre.length > 0) ||
+      b.summary.wired - a.summary.wired ||
+      b.summary.mobile.length - a.summary.mobile.length,
+  };
+
+  const shortName = r => r.address.split(',')[0];
+
+  function chip(text, cls) {
+    return el('span', 'chip' + (cls ? ' ' + cls : ''), text);
+  }
+
+  function renderRentals() {
+    const panel = $('#rentals-panel');
+    const host = $('#rentals');
+    const wrap = $('#rentals-toggle-wrap');
+    host.textContent = '';
+
+    const has = state.rentals.length > 0;
+    panel.hidden = !has;
+    wrap.hidden = !has;
+    if (!has) return;
+
+    // Rentals in one cell get identical data, which a side-by-side comparison
+    // would otherwise present as if it were independent evidence.
+    const byCell = new Map();
+    for (const r of state.rentals) {
+      if (!byCell.has(r.cellId)) byCell.set(r.cellId, []);
+      byCell.get(r.cellId).push(r);
+    }
+
+    const list = [...state.rentals].sort(rentalSorters[state.rentalSort] || rentalSorters.added);
+    for (const r of list) {
+      const row = el('article', 'rental');
+
+      const head = el('div', 'rental-head');
+      const show = el('button', 'rental-addr', r.address);
+      show.type = 'button';
+      show.title = t().rentalShow;
+      show.addEventListener('click', () => showRental(r));
+      head.append(show);
+
+      const rent = el('input', 'rental-rent');
+      rent.type = 'number';
+      rent.inputMode = 'decimal';
+      rent.min = '0';
+      rent.step = '5';
+      rent.placeholder = t().rentalRentPh;
+      rent.setAttribute('aria-label', t().rentalRent);
+      if (r.rent != null) rent.value = r.rent;
+      rent.addEventListener('change', () => {
+        const v = rent.value.trim();
+        updateRental(r.id, { rent: v === '' ? null : Math.max(0, Number(v)) });
+        if (state.rentalSort === 'rent') renderRentals();
+      });
+      head.append(rent);
+
+      const del = el('button', 'rental-del', '×');
+      del.type = 'button';
+      del.title = t().rentalRemoveTitle;
+      del.setAttribute('aria-label', t().rentalRemoveTitle);
+      del.addEventListener('click', () => removeRental(r.id));
+      head.append(del);
+      row.append(head);
+
+      const chips = el('div', 'chips');
+      const s = r.summary;
+      chips.append(chip(`${t().rentalFibre} : ${s.fibre.length ? s.fibre.join(', ') : t().rentalNone}`, s.fibre.length ? 'chip-fibre' : 'chip-muted'));
+      chips.append(chip(`${t().rentalCable} : ${s.cable.length ? s.cable.join(', ') : t().rentalNone}`, s.cable.length ? 'chip-cable' : 'chip-muted'));
+      chips.append(chip(`${t().rentalWired} : ${s.wired ? t().speed[s.wired] : t().rentalNone}`));
+      chips.append(s.mobile.length
+        ? chip(t().rentalMobile(s.mobile.length), 'chip-mobile')
+        : chip(t().rentalDeadZone, 'chip-warn'));
+      const twins = (byCell.get(r.cellId) || []).filter(x => x.id !== r.id);
+      if (twins.length) chips.append(chip(t().rentalSameCell(shortName(twins[0])), 'chip-muted'));
+      row.append(chips);
+
+      const foot = el('div', 'rental-foot');
+      const note = el('input', 'rental-note');
+      note.type = 'text';
+      note.placeholder = t().rentalNotePh;
+      note.maxLength = 500;
+      note.value = r.note;
+      note.addEventListener('change', () => updateRental(r.id, { note: note.value.trim() }));
+      foot.append(note);
+      if (r.url) {
+        const a = el('a', 'isp-link', t().rentalOpen);
+        a.href = r.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        foot.append(a);
+      }
+      row.append(foot);
+
+      host.append(row);
+    }
+  }
+
+  function setRentalsLayer(on) {
+    map.rentalsOn = on;
+    const toggle = $('#rentals-toggle');
+    if (toggle) toggle.checked = on;
+    refreshRentalsLayer();
+  }
+
+  function refreshRentalsLayer() {
+    if (!map.instance) return;
+    if (!map.rentalsLayer) map.rentalsLayer = L.layerGroup().addTo(map.instance);
+    map.rentalsLayer.clearLayers();
+    if (!map.rentalsOn) return;
+
+    for (const r of state.rentals) {
+      // Popup content is built as DOM, not an HTML string: titles, notes and
+      // addresses all come from outside and are never parsed as markup.
+      const box = el('div', 'rental-pop');
+      box.append(el('strong', null, r.address));
+      if (r.rent != null) box.append(el('div', 'rental-pop-rent', money(r.rent) + t().perMonth));
+      const s = r.summary;
+      box.append(el('div', null, `${t().rentalFibre} : ${s.fibre.length ? s.fibre.join(', ') : t().rentalNone}`));
+      box.append(el('div', null, `${t().rentalCable} : ${s.cable.length ? s.cable.join(', ') : t().rentalNone}`));
+      box.append(el('div', s.mobile.length ? null : 'rental-pop-warn',
+        s.mobile.length ? t().rentalMobile(s.mobile.length) : t().rentalDeadZone));
+
+      const actions = el('div', 'rental-pop-actions');
+      const show = el('button', 'link-btn', t().rentalShow);
+      show.type = 'button';
+      show.addEventListener('click', () => { map.instance.closePopup(); showRental(r); });
+      actions.append(show);
+      if (r.url) {
+        const a = el('a', 'isp-link', t().rentalOpen);
+        a.href = r.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        actions.append(a);
+      }
+      box.append(actions);
+
+      L.circleMarker([r.lat, r.lon], {
+        radius: 7,
+        weight: 2,
+        color: cssVar('--card') || '#fff',
+        fillColor: cssVar('--ink') || '#0B2545',
+        fillOpacity: 1,
+      })
+        .bindPopup(box)
+        .addTo(map.rentalsLayer);
+    }
+  }
+
+  function exportRentals() {
+    const payload = {
+      app: 'qui-vous-branche',
+      version: 1,
+      exported: new Date().toISOString(),
+      rentals: state.rentals,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mes-logements-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  async function importRentals(file) {
+    try {
+      const data = JSON.parse(await file.text());
+      const incoming = (Array.isArray(data) ? data : data.rentals || []).map(normaliseRental).filter(Boolean);
+      let added = 0;
+      for (const r of incoming) {
+        if (state.rentals.length >= MAX_RENTALS) break;
+        const dup = state.rentals.some(x => x.id === r.id ||
+          (r.url && x.url === r.url) || (x.address === r.address && x.cellId === r.cellId));
+        if (dup) continue;
+        state.rentals.push(r);
+        added++;
+      }
+      persistRentals();
+      renderRentals();
+      if (added && !map.rentalsOn) setRentalsLayer(true);
+      else refreshRentalsLayer();
+      renderSaveState();
+      showToast(t().imported(added));
+    } catch (err) {
+      console.warn('import failed', err);
+      showToast(t().importFailed);
+    }
+  }
+
+  /* ---------- listings: shared or pasted ---------- */
+
+  // A shared or pasted listing is turned into an address, then searched. The
+  // REALTOR.ca slug runs the neighbourhood onto the street, so its candidates
+  // are tried in turn until the geocoder finds a street in Quebec.
+  async function handleListing(input) {
+    const found = window.QVBListing ? window.QVBListing.extractAddress(input) : null;
+    const title = String(input.title || '').replace(/\s*-\s*centris\.ca\s*$/i, '').trim();
+    state.pendingListing = {
+      title,
+      url: safeUrl((found && found.url) || input.url || ''),
+    };
+
+    if (!found) { showError('errListingNoAddress'); return; }
+    if (found.unresolvable) { showError('errListingLinkOnly', found.site); return; }
+
+    $('#address').value = found.query;
+    await searchCandidates(found.candidates && found.candidates.length ? found.candidates : [found.query]);
+  }
+
+  // Only a geocoder result that carries the listing's civic number, street and
+  // city is taken automatically - see QVBListing.matchesCandidate for why.
+  async function searchCandidates(candidates) {
+    if (!navigator.onLine) { showError('errOffline'); return; }
+    const matches = window.QVBListing.matchesCandidate;
+    for (const q of candidates) {
+      let places = [];
+      try { places = await geocode(q); } catch (err) { continue; }
+      const hit = places.find(p => p.kind === 'Street' && inQuebec(p) && matches(p.title, q));
+      if (hit) {
+        renderSuggestions([]);
+        await lookup(hit);
+        return;
+      }
+    }
+    // Nothing matched exactly: show suggestions and let the person choose,
+    // rather than silently present a same-named street somewhere else.
+    await runSearch(candidates[0]);
+  }
+
   /* ---------- flow ---------- */
 
-  function showError(key) {
+  function showError(key, arg) {
     $('#result').hidden = true;
     const box = $('#empty');
     box.hidden = false;
-    $('#empty-title').textContent = t()[key].t;
-    $('#empty-body').textContent = t()[key].b;
+    const msg = t()[key];
+    $('#empty-title').textContent = msg.t;
+    $('#empty-body').textContent = typeof msg.b === 'function' ? msg.b(arg) : msg.b;
   }
 
   function showResult() {
@@ -746,12 +1156,14 @@
     renderProviders(groupByTech(r.entries));
     renderMobile(r.entries);
     renderPlans(r.entries);
+    renderSaveState();
   }
 
   // A click on the map has coordinates but no address. Show the cell straight
   // away and fill the address in afterwards, so the answer never waits on a
   // reverse lookup that may not come.
   async function lookupPoint(lat, lon) {
+    state.pendingListing = null;
     const place = { title: formatCoords(lat, lon), lat, lon };
     const shown = await showCell(place, 'QC');
     if (!shown) return;
@@ -850,8 +1262,18 @@
       const places = await geocode(query);
       if (!places.length) { showError('errNotFound'); renderSuggestions([]); return; }
       $('#empty').hidden = true;
-      if (places.length === 1) { renderSuggestions([]); await lookup(places[0]); }
-      else renderSuggestions(places);
+
+      // Two merged sources rarely return a single row, so go straight to the
+      // result when exactly one row matches the civic number, street and city.
+      // Two such rows (the same street in two towns) still ask.
+      const exact = places.filter(p =>
+        p.kind === 'Street' && inQuebec(p) && window.QVBListing.matchesCandidate(p.title, query));
+      if (exact.length === 1 || places.length === 1) {
+        renderSuggestions([]);
+        await lookup(exact[0] || places[0]);
+      } else {
+        renderSuggestions(places);
+      }
     } catch (err) {
       console.error(err);
       showError('errNetwork');
@@ -887,6 +1309,8 @@
       ? 'Qui vous branche · Internet au Québec'
       : 'Who wires you · Internet in Quebec';
     if (state.result) showResult();
+    renderRentals();
+    refreshRentalsLayer();
   }
 
   function setLang(lang) {
@@ -951,13 +1375,20 @@
     state.providers = providers;
     state.byId = new Map(providers.map(p => [p.id, p]));
     state.plans = plans;
+    state.rentals = loadRentals();
 
     applyLang();
 
     $('#search-form').addEventListener('submit', ev => {
       ev.preventDefault();
       const q = $('#address').value.trim();
-      if (q) runSearch(q);
+      if (!q) return;
+      if (window.QVBListing && window.QVBListing.looksLikeListing(q)) {
+        handleListing({ text: q });
+      } else {
+        state.pendingListing = null;
+        runSearch(q);
+      }
     });
 
     for (const btn of document.querySelectorAll('.lang-btn')) {
@@ -972,6 +1403,22 @@
       });
     }
 
+    $('#save-rental').addEventListener('click', saveCurrent);
+    $('#export-rentals').addEventListener('click', exportRentals);
+    $('#import-rentals').addEventListener('click', () => $('#import-file').click());
+    $('#import-file').addEventListener('change', ev => {
+      const file = ev.target.files && ev.target.files[0];
+      if (file) importRentals(file);
+      ev.target.value = '';
+    });
+    for (const btn of document.querySelectorAll('.rsort-btn')) {
+      btn.addEventListener('click', () => {
+        state.rentalSort = btn.dataset.rsort;
+        for (const b of document.querySelectorAll('.rsort-btn')) b.classList.toggle('is-on', b === btn);
+        renderRentals();
+      });
+    }
+
     initMap();
 
     // Small, deliberate test surface: lets a headless check drive a map click
@@ -980,10 +1427,22 @@
       lookupPoint,
       map: () => map.instance,
       cell: () => (state.result ? state.result.cell.hexid : null),
+      rentals: () => state.rentals.slice(),
+      handleListing,
     };
 
-    const q = new URL(location.href).searchParams.get('q');
-    if (q) { $('#address').value = q; runSearch(q); }
+    // Android's share sheet lands here (manifest share_target, GET) with the
+    // listing's title, text and url. The params are cleared from the address
+    // bar first, so a reload doesn't re-run the share.
+    const params = new URL(location.href).searchParams;
+    if (['title', 'text', 'url'].some(k => params.has(k))) {
+      const shared = { title: params.get('title') || '', text: params.get('text') || '', url: params.get('url') || '' };
+      history.replaceState(null, '', location.pathname);
+      handleListing(shared);
+    } else {
+      const q = params.get('q');
+      if (q) { $('#address').value = q; runSearch(q); }
+    }
 
     registerServiceWorker();
   }
